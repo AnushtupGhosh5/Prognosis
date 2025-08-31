@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/*
+  Theme system using CSS variables + Tailwind v4 tokens
+  - Default: Dark theme
+  - Light theme: set data-theme="light" on <html>
+*/
+
+:root {
+  /* Dark (default) */
+  --bg: #0f172a;            /* slate-900 */
+  --surface: #111827;       /* gray-900 */
+  --elevated: #1f2937;      /* gray-800 */
+  --muted: #374151;         /* gray-700 */
+  --border: #334155;        /* slate-700 */
+  --foreground: #e5e7eb;    /* gray-200 */
+  --muted-foreground: #9ca3af; /* gray-400 */
+
+  --medical: #22c3ee;       /* accent/cyan */
+  --medical-dark: #1aa0c4;  /* darker cyan */
+  --medical-light: #083344;  /* cyan-950 for subtle tints */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --error: #ef4444;
+}
+
+:root[data-theme='light'] {
+  /* Light */
+  --bg: #f7f7fb;            /* off-white */
+  --surface: #ffffff;        /* paper */
+  --elevated: #ffffff;       /* elevated cards */
+  --muted: #f3f4f6;          /* gray-100 */
+  --border: #e5e7eb;         /* gray-200 */
+  --foreground: #0f172a;     /* slate-900 */
+  --muted-foreground: #4b5563; /* gray-600 */
+
+  --medical: #0ea5e9;        /* blue/cyan */
+  --medical-dark: #0284c7;
+  --medical-light: #e0f2fe;  /* sky-100 */
+  --success: #16a34a;
+  --warning: #d97706;
+  --error: #dc2626;
+}
+
+@theme inline {
+  /* Semantic colors */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* Accents */
+  --color-medical: var(--medical);
+  --color-medical-dark: var(--medical-dark);
+  --color-medical-light: var(--medical-light);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+}
+
+body {
+  background: var(--bg);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Utility abstractions */
+.btn-primary {
+  @apply bg-medical hover:bg-medical-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm;
+}
+
+.btn-secondary {
+  @apply bg-muted hover:bg-elevated text-foreground/90 font-medium py-2 px-4 rounded-lg transition-colors duration-200 border border-border;
+}
+
+.card {
+  @apply bg-surface rounded-xl shadow-lg p-6 border border-border;
+}
+
+.input {
+  @apply w-full px-3 py-2 rounded-lg border border-border bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/50 focus:border-medical;
+}
