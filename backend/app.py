@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import os
 import bcrypt
@@ -16,12 +16,18 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure CORS for production deployment
-CORS(app, origins=[
-    "http://localhost:3000",
-    "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-    "https://*.vercel.app",  # Allow all Vercel preview deployments
-    "https://prognosis-frontend.vercel.app"  # Production domain if different
-], supports_credentials=True, methods=['GET', 'POST', 'OPTIONS'], allow_headers=['Content-Type', 'Authorization'])
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:3000",
+            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisbackend.vercel.app",
+            "https://prognosis-frontend.vercel.app"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Initialize Firebase
 db = init_firebase()
@@ -35,6 +41,16 @@ def after_request(response):
     response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
     response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
     return response
+
+# Handle preflight requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
 
 def require_auth(f):
     """Decorator to require authentication for protected endpoints"""
