@@ -6,6 +6,16 @@ const nextConfig = {
   // Enable static optimization
   trailingSlash: false,
   
+  // Remove double slashes in URLs
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
+  
   // ESLint configuration for build
   eslint: {
     // Only run ESLint on these directories during build

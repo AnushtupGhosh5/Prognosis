@@ -8,8 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/app.py"
+    },
+    {
+      "src": "/health",
+      "dest": "/app.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "/app.py"
     }
   ],
   "env": {

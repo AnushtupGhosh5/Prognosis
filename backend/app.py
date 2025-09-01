@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from firebase_config import init_firebase, get_db, create_custom_token, verify_firebase_token
 from functools import wraps
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -15,20 +16,21 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Configure CORS for production deployment
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "http://localhost:3000",
-            "https://prognosisfrontend.vercel.app",
-            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-            "https://prognosisbackend.vercel.app",
-            "https://prognosis-frontend.vercel.app"
-        ],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+# Configure CORS for Vercel deployment
+CORS(app, 
+    origins=[
+        "http://localhost:3000",
+        "https://prognosisfrontend.vercel.app",
+        "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
+        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+        "https://prognosisbackend.vercel.app"
+    ], 
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], 
+    methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    supports_credentials=True,
+    send_wildcard=False,
+    vary_header=True
+)
 
 # Initialize Firebase
 db = init_firebase()
@@ -39,31 +41,33 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Add response headers for cross-origin policies
 @app.after_request
 def after_request(response):
-    # Don't set restrictive policies for OAuth
-    response.headers['Cross-Origin-Opener-Policy'] = 'unsafe-none'
-    response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
-    # Add CORS headers for all responses
-    origin = request.headers.get('Origin')
-    if origin and origin in [
-        "http://localhost:3000",
-        "https://prognosisfrontend.vercel.app",
-        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisbackend.vercel.app",
-        "https://prognosis-frontend.vercel.app"
-    ]:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    # Remove restrictive COOP for OAuth compatibility
+    # response.headers['Cross-Origin-Opener-Policy'] = 'unsafe-none'
+    # response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
     return response
 
-# Handle preflight requests
+# Handle preflight requests explicitly
 @app.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', '*'))
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
-        response.headers.add('Access-Control-Allow-Methods', "GET,POST,OPTIONS")
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        origin = request.headers.get('Origin')
+        
+        allowed_origins = [
+            "http://localhost:3000",
+            "https://prognosisfrontend.vercel.app",
+            "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisbackend.vercel.app"
+        ]
+        
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+        
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type, Authorization, X-Requested-With, Accept")
+        response.headers.add('Access-Control-Allow-Methods', "GET, POST, OPTIONS, PUT, DELETE")
+        response.headers.add('Access-Control-Max-Age', '86400')
         return response
 
 def require_auth(f):
@@ -82,6 +86,33 @@ def require_auth(f):
         request.user_uid = decoded_token['uid']
         return f(*args, **kwargs)
     return decorated_function
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for debugging CORS"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'Backend is running',
+        'cors_origins': [
+            "http://localhost:3000",
+            "https://prognosisfrontend.vercel.app",
+            "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisbackend.vercel.app"
+        ]
+    }), 200
+
+@app.route('/api/cors-test', methods=['GET', 'POST', 'OPTIONS'])
+def cors_test():
+    """Test endpoint for CORS configuration"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    return jsonify({
+        'method': request.method,
+        'origin': request.headers.get('Origin'),
+        'message': 'CORS test successful'
+    }), 200
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
@@ -601,19 +632,31 @@ def get_session_details(session_id):
         print(f"Get session details error: {e}")
         return jsonify({'error': 'Failed to get session details'}), 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'message': 'Prognosis API is running'}), 200
-
 @app.route('/', methods=['GET'])
 def root():
-    """Root endpoint"""
-    return jsonify({'status': 'healthy', 'message': 'Prognosis API is running', 'version': '1.0.0'}), 200
+    """Root endpoint for health check"""
+    return jsonify({
+        'status': 'healthy', 
+        'message': 'Prognosis API is running', 
+        'version': '1.0.0',
+        'cors_enabled': True
+    }), 200
+
+@app.route('/debug', methods=['GET'])
+def debug_info():
+    """Debug endpoint to check request details"""
+    return jsonify({
+        'path': request.path,
+        'url': request.url,
+        'method': request.method,
+        'origin': request.headers.get('Origin'),
+        'user_agent': request.headers.get('User-Agent'),
+        'headers': dict(request.headers),
+        'args': request.args.to_dict()
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-# For Vercel deployment
-from flask import Flask
-app = app
+# Export app for Vercel
+vercel_app = app

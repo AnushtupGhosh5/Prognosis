@@ -1,0 +1,18 @@
+{
+  "name": "prognosis",
+  "version": "1.0.0",
+  "description": "AI-powered medical case simulation platform",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build", 
+    "start": "cd frontend && npm run start",
+    "backend": "cd backend && python app.py"
+  },
+  "keywords": ["medical", "simulation", "ai", "education"],
+  "author": "Prognosis Team",
+  "license": "MIT"
+}
