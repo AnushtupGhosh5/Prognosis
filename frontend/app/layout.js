@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
       <head />
       <body className={`${inter.className} antialiased`}>
         {/* Initialize theme before paint to avoid FOUC */}
@@ -22,8 +22,12 @@ export default function RootLayout({ children }) {
               try {
                 var stored = localStorage.getItem('theme');
                 var theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
-                document.documentElement.setAttribute('data-theme', theme);
-              } catch (_) { document.documentElement.setAttribute('data-theme','dark'); }
+                if (theme !== 'dark') {
+                  document.documentElement.setAttribute('data-theme', theme);
+                }
+              } catch (_) { 
+                // Default is already set to dark
+              }
             `,
           }}
         />

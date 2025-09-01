@@ -44,25 +44,25 @@ def register():
     """Register a new user"""
     try:
         data = request.get_json()
-        username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         
-        if not username or not password:
-            return jsonify({'error': 'Username and password required'}), 400
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
         
         # Check if user already exists
         users_ref = db.collection('users')
-        existing_user = users_ref.where('username', '==', username).get()
+        existing_user = users_ref.where('email', '==', email).get()
         
         if existing_user:
-            return jsonify({'error': 'Username already exists'}), 400
+            return jsonify({'error': 'Email already exists'}), 400
         
         # Hash password
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         
         # Create user document
         user_data = {
-            'username': username,
+            'email': email,
             'password_hash': password_hash.decode('utf-8'),
             'created_at': datetime.utcnow(),
             'sessions': []
@@ -80,7 +80,7 @@ def register():
         return jsonify({
             'token': custom_token.decode('utf-8'),
             'user_id': user_id,
-            'username': username
+            'email': email
         }), 201
         
     except Exception as e:
@@ -92,15 +92,15 @@ def login():
     """Login user"""
     try:
         data = request.get_json()
-        username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         
-        if not username or not password:
-            return jsonify({'error': 'Username and password required'}), 400
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
         
-        # Find user by username
+        # Find user by email
         users_ref = db.collection('users')
-        user_docs = users_ref.where('username', '==', username).get()
+        user_docs = users_ref.where('email', '==', email).get()
         
         if not user_docs:
             return jsonify({'error': 'Invalid credentials'}), 401
@@ -120,12 +120,69 @@ def login():
         return jsonify({
             'token': custom_token.decode('utf-8'),
             'user_id': user_doc.id,
-            'username': username
+            'email': email
         }), 200
         
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({'error': 'Login failed'}), 500
+
+@app.route('/api/auth/social', methods=['POST'])
+def social_auth():
+    """Handle social authentication (Google/GitHub)"""
+    try:
+        # For social auth, the user is already authenticated via Firebase client
+        # We just need to verify the token and create/update user record
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Authorization token required'}), 401
+        
+        token = auth_header.split(' ')[1]
+        decoded_token = verify_firebase_token(token)
+        if not decoded_token:
+            return jsonify({'error': 'Invalid token'}), 401
+        
+        user_uid = decoded_token['uid']
+        email = decoded_token.get('email')
+        name = decoded_token.get('name', '')
+        
+        # Check if user exists in our database
+        users_ref = db.collection('users')
+        existing_users = users_ref.where('firebase_uid', '==', user_uid).get()
+        
+        if existing_users:
+            # User exists, return existing data
+            user_doc = existing_users[0]
+            user_data = user_doc.to_dict()
+            return jsonify({
+                'user_id': user_doc.id,
+                'email': user_data.get('email', email),
+                'name': user_data.get('name', name)
+            }), 200
+        else:
+            # Create new user record for social auth
+            user_data = {
+                'firebase_uid': user_uid,
+                'email': email,
+                'name': name,
+                'auth_provider': 'social',
+                'created_at': datetime.utcnow(),
+                'sessions': []
+            }
+            
+            # Add user to Firestore
+            user_ref = users_ref.add(user_data)[1]
+            user_id = user_ref.id
+            
+            return jsonify({
+                'user_id': user_id,
+                'email': email,
+                'name': name
+            }), 201
+        
+    except Exception as e:
+        print(f"Social auth error: {e}")
+        return jsonify({'error': 'Social authentication failed'}), 500
 
 @app.route('/api/case/start', methods=['GET'])
 @require_auth

@@ -1,5 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithCustomToken, 
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  onAuthStateChanged, 
+  signOut 
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -15,6 +23,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Initialize providers
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
+
+// Configure providers
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+githubProvider.addScope('user:email');
+
+// Social authentication functions
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
+};
+
+export const signInWithGithub = async () => {
+  try {
+    const result = await signInWithPopup(auth, githubProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with GitHub:', error);
+    throw error;
+  }
+};
 
 // Helper functions
 export const loginWithCustomToken = async (customToken) => {
