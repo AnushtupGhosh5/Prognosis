@@ -20,6 +20,7 @@ CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:3000",
+            "https://prognosisfrontend.vercel.app",
             "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
             "https://prognosisbackend.vercel.app",
             "https://prognosis-frontend.vercel.app"
@@ -38,8 +39,20 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Add response headers for cross-origin policies
 @app.after_request
 def after_request(response):
-    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    # Don't set restrictive policies for OAuth
+    response.headers['Cross-Origin-Opener-Policy'] = 'unsafe-none'
     response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
+    # Add CORS headers for all responses
+    origin = request.headers.get('Origin')
+    if origin and origin in [
+        "http://localhost:3000",
+        "https://prognosisfrontend.vercel.app",
+        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+        "https://prognosisbackend.vercel.app",
+        "https://prognosis-frontend.vercel.app"
+    ]:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 # Handle preflight requests
@@ -47,9 +60,10 @@ def after_request(response):
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
+        response.headers.add('Access-Control-Allow-Methods', "GET,POST,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
 
 def require_auth(f):
@@ -591,6 +605,11 @@ def get_session_details(session_id):
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'message': 'Prognosis API is running'}), 200
+
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint"""
+    return jsonify({'status': 'healthy', 'message': 'Prognosis API is running', 'version': '1.0.0'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
