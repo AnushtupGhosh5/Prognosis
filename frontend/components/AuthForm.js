@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { signInWithToken } from '../lib/firebase';
+import { loginWithCustomToken } from '../lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -44,7 +44,7 @@ export default function AuthForm({ onAuthSuccess }) {
       const { token, user_id, username } = response.data;
       
       // Sign in with custom token
-      await signInWithToken(token);
+      await loginWithCustomToken(token);
       
       // Store user info in localStorage
       localStorage.setItem('userInfo', JSON.stringify({
@@ -64,6 +64,7 @@ export default function AuthForm({ onAuthSuccess }) {
   };
 
   return (
+    <div className="min-h-screen bg-bg flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-medical text-white shadow-md">
