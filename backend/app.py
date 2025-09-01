@@ -47,28 +47,19 @@ def after_request(response):
     return response
 
 # Handle preflight requests explicitly
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = make_response()
-        origin = request.headers.get('Origin')
-        
-        allowed_origins = [
-            "http://localhost:3000",
-            "https://prognosisfrontend.vercel.app",
-            "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
-            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-            "https://prognosisbackend.vercel.app"
-        ]
-        
-        if origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-        
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type, Authorization, X-Requested-With, Accept")
-        response.headers.add('Access-Control-Allow-Methods', "GET, POST, OPTIONS, PUT, DELETE")
-        response.headers.add('Access-Control-Max-Age', '86400')
-        return response
+# Configure CORS for Vercel deployment
+CORS(app, 
+    origins=[
+        "http://localhost:3000",
+        "https://prognosisfrontend.vercel.app",
+        "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
+        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app".
+        "https://prognosisbackend.vercel.app"
+    ], 
+    allow_headers=["Content-Type", "Authorization"], 
+    methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    supports_credentials=True
+)
 
 def require_auth(f):
     """Decorator to require authentication for protected endpoints"""
@@ -98,6 +89,7 @@ def health_check():
             "https://prognosisfrontend.vercel.app",
             "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
             "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisfrontend.vercel.app/dashboard"
             "https://prognosisbackend.vercel.app"
         ]
     }), 200
