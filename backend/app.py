@@ -14,13 +14,27 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS for production deployment
+CORS(app, origins=[
+    "http://localhost:3000",
+    "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+    "https://*.vercel.app",  # Allow all Vercel preview deployments
+    "https://prognosis-frontend.vercel.app"  # Production domain if different
+], supports_credentials=True, methods=['GET', 'POST', 'OPTIONS'], allow_headers=['Content-Type', 'Authorization'])
 
 # Initialize Firebase
 db = init_firebase()
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Add response headers for cross-origin policies
+@app.after_request
+def after_request(response):
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    response.headers['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
+    return response
 
 def require_auth(f):
     """Decorator to require authentication for protected endpoints"""
@@ -564,3 +578,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# For Vercel deployment
+from flask import Flask
+app = app
