@@ -213,20 +213,18 @@ export default function AuthForm({ onAuthSuccess }) {
                 />
               </div>
               
-              {!isLogin && (
-                <div>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-elevated/50 rounded-xl sm:rounded-2xl border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical transition-all duration-200 backdrop-blur-sm text-sm sm:text-base"
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
-                </div>
-              )}
+              <div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-elevated/50 rounded-xl sm:rounded-2xl border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical transition-all duration-200 backdrop-blur-sm text-sm sm:text-base"
+                  placeholder={isLogin ? "Enter your password" : "Create a password"}
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+              </div>
 
               <button
                 type="submit"
