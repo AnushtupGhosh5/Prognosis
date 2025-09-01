@@ -17,168 +17,114 @@ Prognosis is an innovative AI-powered medical case simulation platform designed 
 ### High-Level Architecture Overview
 
 ```mermaid
-graph TB
-    subgraph Client["🖥️ Client Layer"]
-        A[Next.js Frontend<br/>React 19 + Tailwind CSS]
-        A1[Authentication UI]
-        A2[Chat Interface]
-        A3[Dashboard]
-        A4[Feedback System]
-        A --> A1
-        A --> A2
-        A --> A3
-        A --> A4
-    end
+flowchart TD
+    A["Next.js Frontend<br/>React 19 + Tailwind CSS"] --> B["Flask Backend<br/>Python REST API"]
+    B --> C["Firebase Firestore<br/>NoSQL Database"]
+    B --> D["Firebase Auth<br/>User Management"]
+    B --> E["Google Gemini API<br/>AI Integration"]
     
-    subgraph API["⚙️ API Layer"]
-        B[Flask Backend<br/>Python REST API]
-        B1[Auth Middleware<br/>JWT + Firebase]
-        B2[Case Controller]
-        B3[Session Controller]
-        B4[AI Controller]
-        B --> B1
-        B --> B2
-        B --> B3
-        B --> B4
-    end
+    A -.-> A1["Authentication UI"]
+    A -.-> A2["Chat Interface"]
+    A -.-> A3["Dashboard"]
+    A -.-> A4["Feedback System"]
     
-    subgraph Data["💾 Data Layer"]
-        C[Firebase Firestore<br/>NoSQL Database]
-        D[Firebase Auth<br/>User Management]
-        C1[(Users Collection)]
-        C2[(Cases Collection)]
-        C3[(Sessions Collection)]
-        C --> C1
-        C --> C2
-        C --> C3
-    end
+    B -.-> B1["Auth Middleware"]
+    B -.-> B2["Case Controller"]
+    B -.-> B3["Session Controller"]
+    B -.-> B4["AI Controller"]
     
-    subgraph AI["🤖 AI Layer"]
-        E[Google Gemini API<br/>LLM Integration]
-        E1[Patient Simulation]
-        E2[Feedback Generation]
-        E --> E1
-        E --> E2
-    end
+    C -.-> C1["Users Collection"]
+    C -.-> C2["Cases Collection"]
+    C -.-> C3["Sessions Collection"]
     
-    A -.->|HTTPS/REST| B
-    B1 -.->|Token Validation| D
-    B2 -.->|Case Data| C
-    B3 -.->|Session Storage| C
-    B4 -.->|AI Generation| E
-    
-    style Client fill:#e1f5fe
-    style API fill:#f3e5f5
-    style Data fill:#e8f5e8
-    style AI fill:#fff3e0
+    E -.-> E1["Patient Simulation"]
+    E -.-> E2["Feedback Generation"]
 ```
 
 ### Data Flow Architecture
 
 ```mermaid
 sequenceDiagram
-    participant S as 👨‍🎓 Medical Student
-    participant F as 🖥️ Next.js Frontend
-    participant B as ⚙️ Flask Backend
-    participant FB as 🔥 Firebase
-    participant G as 🤖 Gemini AI
+    participant S as Student
+    participant F as Frontend
+    participant B as Backend
+    participant FB as Firebase
+    participant G as Gemini
     
-    Note over S,G: Authentication Flow
-    S->>F: Login/Register Request
+    Note right of S: Authentication Flow
+    S->>F: Login Request
     F->>B: POST /api/auth/login
-    B->>FB: Validate/Create User
+    B->>FB: Validate User
     FB-->>B: User Data
-    B->>B: Generate Custom Token
-    B-->>F: JWT + Custom Token
-    F->>FB: signInWithCustomToken
-    FB-->>F: Firebase User Session
+    B-->>F: JWT Token
     F-->>S: Dashboard Access
     
-    Note over S,G: Case Simulation Flow
+    Note right of S: Case Simulation Flow
     S->>F: Start New Case
     F->>B: GET /api/case/start
-    B->>FB: Query Cases Collection
-    FB-->>B: Random Case Data
-    B->>FB: Create Session Document
-    B-->>F: Case Details + Session ID
-    F-->>S: Display Case Information
+    B->>FB: Query Cases
+    FB-->>B: Case Data
+    B-->>F: Case Details
+    F-->>S: Display Case
     
-    Note over S,G: Patient Interaction Flow
-    loop Patient Conversation
-        S->>F: Ask Question to Patient
-        F->>B: POST /api/case/respond
-        B->>FB: Retrieve Session + Case
-        B->>G: Generate Patient Response
-        Note right of G: System Instruction:<br/>"Act as patient with<br/>specific symptoms"
-        G-->>B: AI Patient Response
-        B->>FB: Update Chat History
-        B-->>F: Patient Reply
-        F-->>S: Display Response
-    end
+    Note right of S: Patient Interaction
+    S->>F: Ask Question
+    F->>B: POST /api/case/respond
+    B->>G: Generate Response
+    G-->>B: Patient Reply
+    B-->>F: Response
+    F-->>S: Display Reply
     
-    Note over S,G: Diagnosis & Feedback Flow
+    Note right of S: Diagnosis Submission
     S->>F: Submit Diagnosis
     F->>B: POST /api/case/submit
-    B->>FB: Retrieve Session Data
-    B->>G: Generate Feedback & Score
-    Note right of G: "Evaluate diagnosis<br/>against correct answer"
-    G-->>B: Detailed Feedback
-    B->>FB: Store Final Results
-    B-->>F: Score + Feedback
-    F-->>S: Display Results
+    B->>G: Generate Feedback
+    G-->>B: Score and Feedback
+    B->>FB: Store Results
+    B-->>F: Final Results
+    F-->>S: Show Feedback
 ```
 
 ### Component Architecture
 
 ```mermaid
-graph TD
-    subgraph Frontend["🖥️ Frontend Architecture"]
-        subgraph Pages["📄 Next.js Pages (App Router)"]
-            A[🏠 Home Page<br/>app/page.js] 
-            B[📊 Dashboard<br/>app/dashboard/page.js]
-            C[💬 Simulation<br/>app/simulation/id/page.js]
-            D[📝 Feedback<br/>app/feedback/id/page.js]
-        end
-        
-        subgraph Components["🧩 React Components"]
-            E[🔐 AuthForm.js<br/>Login/Register]
-            F[🗂️ Navbar.js<br/>Navigation]
-            G[💬 ChatWindow.js<br/>Real-time Chat]
-            H[📋 CaseDetailsPanel.js<br/>Patient Info]
-            I[📝 FeedbackModal.js<br/>Diagnosis Form]
-        end
-        
-        subgraph Utils["🛠️ Utilities & Config"]
-            J[🔥 Firebase Config<br/>lib/firebase.js]
-            K[🌐 API Client<br/>HTTP Requests]
-            L[🎨 Tailwind Theme<br/>globals.css]
-        end
+flowchart TD
+    subgraph "Frontend Pages"
+        A["Home Page<br/>app/page.js"]
+        B["Dashboard<br/>app/dashboard/page.js"]
+        C["Simulation<br/>app/simulation/id/page.js"]
+        D["Feedback<br/>app/feedback/id/page.js"]
     end
     
-    subgraph Backend["⚙️ Backend Architecture"]
-        subgraph Endpoints["🔌 REST API Endpoints"]
-            M[POST /api/auth/register<br/>👤 User Registration]
-            N[POST /api/auth/login<br/>🔑 User Authentication]
-            O[GET /api/case/start<br/>🎯 Start New Case]
-            P[POST /api/case/respond<br/>💬 Patient Response]
-            Q[POST /api/case/submit<br/>📊 Submit Diagnosis]
-            R[GET /api/sessions<br/>📈 Session History]
-        end
-        
-        subgraph Services["🛠️ Core Services"]
-            S[🔐 Auth Service<br/>JWT + Firebase]
-            T[📋 Case Service<br/>Case Management]
-            U[💾 Session Service<br/>Session Handling]
-            V[🤖 AI Service<br/>Gemini Integration]
-        end
+    subgraph "React Components"
+        E["AuthForm.js"]
+        F["Navbar.js"]
+        G["ChatWindow.js"]
+        H["CaseDetailsPanel.js"]
+        I["FeedbackModal.js"]
     end
     
-    subgraph External["🌐 External Services"]
-        W[🔥 Firebase Firestore<br/>Database]
-        X[🤖 Google Gemini<br/>AI Language Model]
+    subgraph "API Endpoints"
+        M["POST /api/auth/register"]
+        N["POST /api/auth/login"]
+        O["GET /api/case/start"]
+        P["POST /api/case/respond"]
+        Q["POST /api/case/submit"]
+        R["GET /api/sessions"]
     end
     
-    %% Page to Component connections
+    subgraph "Backend Services"
+        S["Auth Service"]
+        T["Case Service"]
+        U["Session Service"]
+        V["AI Service"]
+    end
+    
+    subgraph "External Services"
+        W["Firebase Firestore"]
+        X["Google Gemini API"]
+    end
+    
     A --> E
     A --> F
     B --> F
@@ -186,15 +132,13 @@ graph TD
     C --> H
     C --> I
     
-    %% Component to API connections
-    E -.->|Auth Requests| M
-    E -.->|Auth Requests| N
-    B -.->|Fetch Cases| O
-    B -.->|Get History| R
-    G -.->|Chat Messages| P
-    I -.->|Submit Results| Q
+    E --> M
+    E --> N
+    B --> O
+    B --> R
+    G --> P
+    I --> Q
     
-    %% Backend service connections
     M --> S
     N --> S
     O --> T
@@ -202,21 +146,10 @@ graph TD
     Q --> V
     R --> U
     
-    %% External service connections
-    S -.->|User Management| W
-    T -.->|Case Data| W
-    U -.->|Session Storage| W
-    V -.->|AI Generation| X
-    
-    %% Shared utilities
-    A --> J
-    B --> J
-    C --> J
-    D --> J
-    
-    style Frontend fill:#e3f2fd
-    style Backend fill:#f3e5f5
-    style External fill:#e8f5e8
+    S --> W
+    T --> W
+    U --> W
+    V --> X
 ```
 
 ## 🛠️ Technology Stack
@@ -244,7 +177,7 @@ graph TD
 │   ├── 📁 app/                 # Next.js App Router (v15)
 │   │   ├── layout.js           # Root layout with Tailwind CSS
 │   │   ├── page.js             # Home page (authentication)
-│   │   ├── globals.css         # Global styles + Tailwind config
+│   │   ├── globals.css         # Global styles + Tailwind 4 theme config
 │   │   ├── 📁 dashboard/
 │   │   │   └── page.js         # User dashboard & session history
 │   │   ├── 📁 simulation/id/
@@ -261,10 +194,10 @@ graph TD
 │   │   └── firebase.js         # Firebase client configuration
 │   ├── 📁 public/              # Static assets
 │   ├── package.json            # Dependencies (Next.js, React, Firebase)
+│   ├── jsconfig.json           # JavaScript configuration
 │   ├── next.config.mjs         # Next.js configuration
 │   ├── postcss.config.mjs      # PostCSS configuration
 │   ├── eslint.config.mjs       # ESLint configuration
-│   ├── tailwind.config.js      # Tailwind CSS configuration
 │   ├── .env.local              # Frontend environment variables
 │   └── .env.local.example      # Frontend environment template
 ├── 📁 .git/                    # Git repository
@@ -512,15 +445,119 @@ This project is ready for GitHub deployment with the following security measures
 
 ## Deployment
 
-### Backend Deployment
-- Deploy to platforms like Heroku, Railway, or Google Cloud Run
-- Ensure environment variables are configured
-- Use production-grade WSGI server (Gunicorn)
+### 🚀 Vercel Deployment (Recommended for Frontend)
 
-### Frontend Deployment
-- Deploy to Vercel, Netlify, or similar platforms
-- Configure environment variables in deployment settings
-- Update API base URL for production backend
+This project is optimized for Vercel deployment with the following features:
+
+**Deployment Files Included:**
+- `vercel.json` - Vercel configuration
+- `.vercelignore` - Files to exclude from deployment
+- `deploy.sh` - Automated deployment script
+- Root `package.json` - Project recognition
+
+**Steps for Vercel Deployment:**
+
+1. **Install Vercel CLI:**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Login to Vercel:**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy from project root:**
+   ```bash
+   vercel
+   ```
+
+4. **For production deployment:**
+   ```bash
+   vercel --prod
+   ```
+
+**Environment Variables for Vercel:**
+In your Vercel dashboard, add these environment variables:
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_API_BASE_URL=https://your-backend-url.com
+```
+
+**Build Configuration:**
+- ESLint errors are ignored during build (`ignoreDuringBuilds: true`)
+- TypeScript errors are ignored during build (`ignoreBuildErrors: true`)
+- Optimized for production performance
+
+### Backend Deployment
+
+**Recommended Platforms:**
+- **Railway**: Easy Python deployment with automatic HTTPS
+- **Heroku**: Classic platform with extensive documentation
+- **Google Cloud Run**: Serverless container deployment
+- **DigitalOcean App Platform**: Simple and cost-effective
+
+**Environment Variables for Backend:**
+```bash
+FLASK_ENV=production
+FLASK_DEBUG=False
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_key\n-----END PRIVATE KEY-----\n"
+GEMINI_API_KEY=your_gemini_key
+JWT_SECRET_KEY=your_jwt_secret
+```
+
+**For Railway Deployment:**
+1. Connect your GitHub repository
+2. Set environment variables in Railway dashboard
+3. Railway will automatically deploy on push to main branch
+
+### Alternative Deployment Options
+
+**Netlify (Frontend):**
+- Build command: `cd frontend && npm run build`
+- Publish directory: `frontend/.next`
+- Framework: Next.js
+
+**Docker Deployment:**
+Created a `Dockerfile` and `docker-compose.yml` for containerized deployment.
+
+### Deployment Checklist
+
+- [ ] Environment variables configured
+- [ ] Firebase project setup complete
+- [ ] Gemini API key active
+- [ ] Backend deployed and accessible
+- [ ] Frontend deployed with correct API URL
+- [ ] CORS configured for frontend domain
+- [ ] Database rules set for production
+- [ ] SSL certificates active (HTTPS)
+
+### Troubleshooting Deployment
+
+**Common Issues:**
+1. **Build Failures**: Check ESLint and TypeScript configurations
+2. **Environment Variables**: Ensure all required vars are set
+3. **API Connection**: Verify backend URL and CORS settings
+4. **Firebase**: Check service account permissions
+5. **Gemini API**: Verify quota and API key validity
+
+**Debug Commands:**
+```bash
+# Test build locally
+cd frontend && npm run build
+
+# Check ESLint
+npm run lint
+
+# Verify environment
+echo $NEXT_PUBLIC_API_BASE_URL
+```
 
 ## Contributing
 
