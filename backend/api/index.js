@@ -1306,7 +1306,7 @@ app.get('/api/leaderboard', async (req, res) => {
     try {
         const { timeframe = 'all' } = req.query;
         
-        // Get all users with their sessions
+        // Get all users
         const usersSnapshot = await db.collection('users').get();
         const leaderboardData = [];
         
@@ -1314,13 +1314,13 @@ app.get('/api/leaderboard', async (req, res) => {
             const userData = userDoc.data();
             const userId = userDoc.id;
             
-            if (!userData.sessions || userData.sessions.length === 0) {
-                continue;
-            }
+            // Get user's completed sessions from sessions collection
+            const sessionsRef = db.collection('sessions');
+            let sessionsQuery = sessionsRef
+                .where('user_id', '==', userId)
+                .where('status', '==', 'completed');
             
-            let filteredSessions = userData.sessions;
-            
-            // Filter sessions based on timeframe
+            // Apply timeframe filter if needed
             if (timeframe !== 'all') {
                 const now = new Date();
                 let cutoffDate;
@@ -1336,26 +1336,44 @@ app.get('/api/leaderboard', async (req, res) => {
                         cutoffDate = new Date(0);
                 }
                 
-                filteredSessions = userData.sessions.filter(session => {
-                    const sessionDate = session.date && session.date.toDate ? session.date.toDate() : new Date(session.date);
-                    return sessionDate >= cutoffDate;
-                });
+                sessionsQuery = sessionsQuery.where('completed_at', '>=', cutoffDate);
             }
             
-            if (filteredSessions.length === 0) continue;
+            const sessionsSnapshot = await sessionsQuery.get();
+            
+            if (sessionsSnapshot.empty) {
+                continue;
+            }
             
             // Calculate statistics
-            const totalSessions = filteredSessions.length;
-            const totalScore = filteredSessions.reduce((sum, session) => sum + (session.score || 0), 0);
-            const averageScore = totalScore / totalSessions;
-            const bestScore = Math.max(...filteredSessions.map(s => s.score || 0));
-            
-            // Calculate streak
+            let totalScore = 0;
+            let totalSessions = 0;
+            let bestScore = 0;
             let currentStreak = 0;
-            const sortedSessions = filteredSessions
+            const sessionData = [];
+            
+            sessionsSnapshot.forEach(sessionDoc => {
+                const session = sessionDoc.data();
+                if (session.score !== null && session.score !== undefined) {
+                    totalScore += session.score;
+                    totalSessions++;
+                    bestScore = Math.max(bestScore, session.score);
+                    sessionData.push({
+                        score: session.score,
+                        completed_at: session.completed_at
+                    });
+                }
+            });
+            
+            if (totalSessions === 0) continue;
+            
+            const averageScore = totalScore / totalSessions;
+            
+            // Calculate current streak (from most recent sessions)
+            const sortedSessions = sessionData
                 .sort((a, b) => {
-                    const dateA = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date);
-                    const dateB = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date);
+                    const dateA = a.completed_at && a.completed_at.toDate ? a.completed_at.toDate() : new Date(a.completed_at);
+                    const dateB = b.completed_at && b.completed_at.toDate ? b.completed_at.toDate() : new Date(b.completed_at);
                     return dateB - dateA;
                 });
             
@@ -1369,7 +1387,7 @@ app.get('/api/leaderboard', async (req, res) => {
             
             leaderboardData.push({
                 userId,
-                username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                username: userData.username || userData.name || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
                 email: userData.email,
                 photoURL: userData.photoURL,
                 totalSessions,
@@ -1411,21 +1429,43 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
         // Use provided userId or fall back to authenticated user
         const targetUserId = req.params.userId || req.userUid;
         
-        // Get user document
-        const userDoc = await db.collection('users').doc(targetUserId).get();
+        // Get user document - first check if targetUserId is a document ID or firebase_uid
+        let userDoc;
+        let userData;
         
-        if (!userDoc.exists) {
+        try {
+            // Try as document ID first
+            const userDocRef = await db.collection('users').doc(targetUserId).get();
+            if (userDocRef.exists) {
+                userData = userDocRef.data();
+                userDoc = { id: userDocRef.id, ...userData };
+            } else {
+                // Try as firebase_uid
+                const userQuery = await db.collection('users').where('firebase_uid', '==', targetUserId).get();
+                if (!userQuery.empty) {
+                    const userSnapshot = userQuery.docs[0];
+                    userData = userSnapshot.data();
+                    userDoc = { id: userSnapshot.id, ...userData };
+                } else {
+                    return res.status(404).json({ error: 'User not found' });
+                }
+            }
+        } catch (error) {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        const userData = userDoc.data();
-        const sessions = userData.sessions || [];
+        // Get user's sessions from sessions collection
+        const sessionsRef = db.collection('sessions');
+        const sessionsSnapshot = await sessionsRef
+            .where('user_id', '==', userDoc.id)
+            .where('status', '==', 'completed')
+            .get();
         
-        if (sessions.length === 0) {
+        if (sessionsSnapshot.empty) {
             return res.json({
                 user: {
-                    id: targetUserId,
-                    username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                    id: userDoc.id,
+                    username: userData.username || userData.name || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
                     email: userData.email,
                     photoURL: userData.photoURL,
                     joined: userData.created_at
@@ -1446,9 +1486,24 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
             });
         }
         
+        // Process sessions data
+        const sessions = [];
+        sessionsSnapshot.forEach(sessionDoc => {
+            const sessionData = sessionDoc.data();
+            if (sessionData.score !== null && sessionData.score !== undefined) {
+                sessions.push({
+                    score: sessionData.score,
+                    completed_at: sessionData.completed_at,
+                    case_type: sessionData.case_type || 'general',
+                    patient_name: sessionData.patient_name || 'Unknown Patient',
+                    diagnosis: sessionData.diagnosis || 'Not recorded'
+                });
+            }
+        });
+        
         // Calculate comprehensive statistics
         const totalSessions = sessions.length;
-        const scores = sessions.map(s => s.score || 0);
+        const scores = sessions.map(s => s.score);
         const totalScore = scores.reduce((sum, score) => sum + score, 0);
         const averageScore = totalScore / totalSessions;
         const bestScore = Math.max(...scores);
@@ -1460,8 +1515,8 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
         
         const sortedSessions = sessions
             .sort((a, b) => {
-                const dateA = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date);
-                const dateB = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date);
+                const dateA = a.completed_at && a.completed_at.toDate ? a.completed_at.toDate() : new Date(a.completed_at);
+                const dateB = b.completed_at && b.completed_at.toDate ? b.completed_at.toDate() : new Date(b.completed_at);
                 return dateA - dateB;
             });
         
@@ -1496,7 +1551,7 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
             improvementRate = ((secondAvg - firstAvg) / firstAvg) * 100;
         }
         
-        // Category breakdown (if case_type is available)
+        // Category breakdown
         const categoryBreakdown = {};
         sessions.forEach(session => {
             const category = session.case_type || 'general';
@@ -1504,7 +1559,7 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
                 categoryBreakdown[category] = { count: 0, averageScore: 0, totalScore: 0 };
             }
             categoryBreakdown[category].count++;
-            categoryBreakdown[category].totalScore += session.score || 0;
+            categoryBreakdown[category].totalScore += session.score;
             categoryBreakdown[category].averageScore = 
                 categoryBreakdown[category].totalScore / categoryBreakdown[category].count;
         });
@@ -1513,9 +1568,9 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
         const recentPerformance = sortedSessions
             .slice(-10)
             .map(session => ({
-                date: session.date,
-                score: session.score || 0,
-                case_type: session.case_type || 'general'
+                date: session.completed_at,
+                score: session.score,
+                case_type: session.case_type
             }));
         
         // Calculate achievements
@@ -1534,17 +1589,17 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
             .slice(-5)
             .reverse()
             .map(session => ({
-                date: session.date,
-                score: session.score || 0,
-                case_type: session.case_type || 'general',
-                patient_name: session.patient_name || 'Unknown Patient',
-                diagnosis: session.diagnosis || 'Not recorded'
+                date: session.completed_at,
+                score: session.score,
+                case_type: session.case_type,
+                patient_name: session.patient_name,
+                diagnosis: session.diagnosis
             }));
         
         res.json({
             user: {
-                id: targetUserId,
-                username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                id: userDoc.id,
+                username: userData.username || userData.name || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
                 email: userData.email,
                 photoURL: userData.photoURL,
                 joined: userData.created_at

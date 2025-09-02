@@ -187,12 +187,12 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                     user.photoURL ? 'hidden' : 'flex'
                   }`}
                 >
-                  {user.username.charAt(0).toUpperCase()}
+                  {(user.username || user.email || 'U').charAt(0).toUpperCase()}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">
-                    {user.username}
+                    {user.username || user.email || 'Anonymous User'}
                   </h3>
                   <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                     <span>{user.totalSessions} cases</span>

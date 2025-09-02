@@ -168,10 +168,10 @@ export default function UserProfile({ userId = null, compact = false }) {
               user.photoURL ? 'hidden' : 'flex'
             }`}
           >
-            {user.username.charAt(0).toUpperCase()}
+            {(user.username || user.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground">{user.username}</h3>
+            <h3 className="text-xl font-bold text-foreground">{user.username || user.email || 'Anonymous User'}</h3>
             <p className="text-sm text-muted-foreground">
               Joined {formatDate(user.joined)}
             </p>
@@ -236,10 +236,10 @@ export default function UserProfile({ userId = null, compact = false }) {
               user.photoURL ? 'hidden' : 'flex'
             }`}
           >
-            {user.username.charAt(0).toUpperCase()}
+            {(user.username || user.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{user.username}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{user.username || user.email || 'Anonymous User'}</h1>
             <p className="text-muted-foreground mb-2">{user.email}</p>
             <p className="text-sm text-muted-foreground">
               Medical Student • Joined {formatDate(user.joined)}
