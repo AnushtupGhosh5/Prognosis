@@ -90,12 +90,12 @@ export default function Navbar({ user }) {
                 >
                   Leaderboard
                 </a>
-                <a
+                {/* <a
                   href="/profile"
                   className="px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated/80 transition-all duration-300 relative group"
                 >
                   Profile
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -222,13 +222,13 @@ export default function Navbar({ user }) {
                 >
                   🏆 Leaderboard
                 </a>
-                <a
+                {/* <a
                   href="/profile"
                   className="block px-4 py-3 rounded-lg text-base font-medium text-foreground bg-elevated/50 hover:bg-elevated transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
                   👤 Profile
-                </a>
+                </a> */}
               </div>
               
               {/* Mobile User Section */}
