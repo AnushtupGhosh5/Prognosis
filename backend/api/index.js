@@ -285,43 +285,195 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
         if (casesArray.length === 0) {
             // Create sample cases if none exist
             const sampleCases = [
-                {
-                    patient_name: 'John Smith',
-                    age: 45,
-                    gender: 'Male',
-                    chief_complaint: 'Chest pain for 2 hours',
-                    vitals: {
-                        blood_pressure: '160/95',
-                        heart_rate: 110,
-                        temperature: 98.6,
-                        respiratory_rate: 22,
-                        oxygen_saturation: 96
-                    },
-                    history: 'Patient has a history of hypertension and smoking',
-                    system_instruction: 'You are John Smith, a 45-year-old male presenting with chest pain. You are anxious and worried about having a heart attack. Answer medical student questions as this patient would, describing symptoms of acute coronary syndrome.',
-                    correct_diagnosis: 'Acute Coronary Syndrome',
-                    correct_treatment: 'Aspirin, nitroglycerin, oxygen, morphine, and urgent cardiology consultation'
-                },
-                {
-                    patient_name: 'Sarah Johnson',
-                    age: 28,
-                    gender: 'Female',
-                    chief_complaint: 'Severe abdominal pain',
-                    vitals: {
-                        blood_pressure: '120/80',
-                        heart_rate: 95,
-                        temperature: 101.2,
-                        respiratory_rate: 18,
-                        oxygen_saturation: 98
-                    },
-                    history: 'No significant past medical history',
-                    system_instruction: 'You are Sarah Johnson, a 28-year-old female with severe right lower quadrant abdominal pain. You are experiencing nausea and have had one episode of vomiting. Answer questions as this patient would, describing symptoms of acute appendicitis.',
-                    correct_diagnosis: 'Acute Appendicitis',
-                    correct_treatment: 'IV antibiotics, pain management, and urgent surgical consultation for appendectomy'
-                }
-            ];
-            
-            // Add sample cases to database
+  {
+    patient_name: 'John Smith',
+    age: 45,
+    gender: 'Male',
+    chief_complaint: 'Chest pain for 2 hours',
+    vitals: {
+      blood_pressure: '160/95',
+      heart_rate: 110,
+      temperature: 98.6,
+      respiratory_rate: 22,
+      oxygen_saturation: 96
+    },
+    history: 'Patient has a history of hypertension and smoking',
+    system_instruction: 'You are John Smith, a 45-year-old male presenting with chest pain. You are anxious and worried about having a heart attack. Answer medical student questions as this patient would, describing symptoms of acute coronary syndrome.',
+    correct_diagnosis: 'Acute Coronary Syndrome',
+    correct_treatment: 'Aspirin, nitroglycerin, oxygen, morphine, and urgent cardiology consultation'
+  },
+  {
+    patient_name: 'Sarah Johnson',
+    age: 28,
+    gender: 'Female',
+    chief_complaint: 'Severe abdominal pain',
+    vitals: {
+      blood_pressure: '120/80',
+      heart_rate: 95,
+      temperature: 101.2,
+      respiratory_rate: 18,
+      oxygen_saturation: 98
+    },
+    history: 'No significant past medical history',
+    system_instruction: 'You are Sarah Johnson, a 28-year-old female with severe right lower quadrant abdominal pain. You are experiencing nausea and have had one episode of vomiting. Answer questions as this patient would, describing symptoms of acute appendicitis.',
+    correct_diagnosis: 'Acute Appendicitis',
+    correct_treatment: 'IV antibiotics, pain management, and urgent surgical consultation for appendectomy'
+  },
+  {
+    patient_name: 'Robert Davis',
+    age: 68,
+    gender: 'Male',
+    chief_complaint: 'Sudden onset of left-sided weakness and difficulty speaking',
+    vitals: {
+      blood_pressure: '190/110',
+      heart_rate: 85,
+      temperature: 99.0,
+      respiratory_rate: 16,
+      oxygen_saturation: 97
+    },
+    history: 'Patient has a history of atrial fibrillation and high cholesterol',
+    system_instruction: 'You are Robert Davis, a 68-year-old male. You suddenly experienced weakness in your left arm and leg and now have trouble forming words. You are confused and slightly disoriented. Answer medical student questions as this patient would, describing symptoms of a stroke.',
+    correct_diagnosis: 'Ischemic Stroke',
+    correct_treatment: 'Immediate neurological assessment, CT scan of the head, consideration for thrombolytic therapy (tPA) or mechanical thrombectomy, and supportive care'
+  },
+  {
+    patient_name: 'Maria Garcia',
+    age: 35,
+    gender: 'Female',
+    chief_complaint: 'Shortness of breath and cough',
+    vitals: {
+      blood_pressure: '115/75',
+      heart_rate: 105,
+      temperature: 102.5,
+      respiratory_rate: 24,
+      oxygen_saturation: 93
+    },
+    history: 'Patient has a history of asthma and recently traveled internationally',
+    system_instruction: 'You are Maria Garcia, a 35-year-old female. You have been experiencing a persistent cough and shortness of breath for the past three days. You feel feverish and fatigued. Answer medical student questions as this patient would, describing symptoms of a lower respiratory tract infection.',
+    correct_diagnosis: 'Community-Acquired Pneumonia',
+    correct_treatment: 'Prescribe appropriate antibiotics (e.g., azithromycin or doxycycline), supportive care with fluids and rest, and follow-up in 2-3 days'
+  },
+  {
+    patient_name: 'David Thompson',
+    age: 60,
+    gender: 'Male',
+    chief_complaint: 'Severe tearing chest and back pain',
+    vitals: {
+      blood_pressure: '190/100',
+      heart_rate: 95,
+      temperature: 98.7,
+      respiratory_rate: 20,
+      oxygen_saturation: 97
+    },
+    history: 'History of uncontrolled hypertension, smoker',
+    system_instruction: 'You are David Thompson, a 60-year-old male with sudden, severe chest pain radiating to the back. You describe it as tearing. Answer questions showing features of aortic dissection.',
+    correct_diagnosis: 'Aortic Dissection',
+    correct_treatment: 'Immediate blood pressure control with IV beta-blockers, pain control, vascular surgery consultation'
+  },
+  {
+    patient_name: 'Emily Chen',
+    age: 24,
+    gender: 'Female',
+    chief_complaint: 'Fever, painful urination, and flank pain',
+    vitals: {
+      blood_pressure: '110/70',
+      heart_rate: 105,
+      temperature: 102.8,
+      respiratory_rate: 18,
+      oxygen_saturation: 99
+    },
+    history: 'Sexually active, no significant PMH',
+    system_instruction: 'You are Emily Chen, a 24-year-old female with burning urination, fever, and right-sided flank pain. Answer questions showing features of acute pyelonephritis.',
+    correct_diagnosis: 'Acute Pyelonephritis',
+    correct_treatment: 'IV or oral antibiotics (e.g., ceftriaxone or ciprofloxacin), fluids, and pain management'
+  },
+  {
+    patient_name: 'Michael Brown',
+    age: 72,
+    gender: 'Male',
+    chief_complaint: 'Shortness of breath, swollen legs',
+    vitals: {
+      blood_pressure: '150/90',
+      heart_rate: 110,
+      temperature: 98.4,
+      respiratory_rate: 24,
+      oxygen_saturation: 90
+    },
+    history: 'History of heart failure, on diuretics',
+    system_instruction: 'You are Michael Brown, a 72-year-old male with worsening shortness of breath, orthopnea, and leg swelling. Answer questions as a patient with acute decompensated heart failure.',
+    correct_diagnosis: 'Acute Decompensated Heart Failure',
+    correct_treatment: 'Supplemental oxygen, IV diuretics (furosemide), monitor electrolytes, cardiology follow-up'
+  },
+  {
+    patient_name: 'Olivia Martinez',
+    age: 50,
+    gender: 'Female',
+    chief_complaint: 'Persistent fatigue and weight gain',
+    vitals: {
+      blood_pressure: '118/76',
+      heart_rate: 58,
+      temperature: 96.8,
+      respiratory_rate: 16,
+      oxygen_saturation: 98
+    },
+    history: 'No significant history, family history of thyroid disease',
+    system_instruction: 'You are Olivia Martinez, a 50-year-old female with chronic fatigue, constipation, cold intolerance, and weight gain. Answer questions consistent with hypothyroidism.',
+    correct_diagnosis: 'Hypothyroidism',
+    correct_treatment: 'Thyroid function tests, start levothyroxine replacement, monitor TSH levels'
+  },
+  {
+    patient_name: 'James Wilson',
+    age: 30,
+    gender: 'Male',
+    chief_complaint: 'Confusion and sweating after skipping a meal',
+    vitals: {
+      blood_pressure: '110/70',
+      heart_rate: 120,
+      temperature: 98.6,
+      respiratory_rate: 18,
+      oxygen_saturation: 99
+    },
+    history: 'Type 1 diabetes mellitus on insulin',
+    system_instruction: 'You are James Wilson, a 30-year-old male with diabetes who became confused and sweaty after missing lunch. You are irritable and shaky. Answer questions consistent with hypoglycemia.',
+    correct_diagnosis: 'Hypoglycemia',
+    correct_treatment: 'Immediate oral glucose if conscious, IV dextrose or IM glucagon if altered consciousness'
+  },
+  {
+    patient_name: 'Sophia Patel',
+    age: 22,
+    gender: 'Female',
+    chief_complaint: 'Severe headache and neck stiffness',
+    vitals: {
+      blood_pressure: '110/65',
+      heart_rate: 102,
+      temperature: 103.1,
+      respiratory_rate: 20,
+      oxygen_saturation: 97
+    },
+    history: 'No major medical history, lives in college dorms',
+    system_instruction: 'You are Sophia Patel, a 22-year-old female with sudden headache, fever, and neck stiffness. You are photophobic and nauseous. Answer questions as a patient with meningitis.',
+    correct_diagnosis: 'Bacterial Meningitis',
+    correct_treatment: 'Immediate empiric IV antibiotics (e.g., ceftriaxone + vancomycin), dexamethasone, lumbar puncture after ruling out raised ICP'
+  },
+  {
+    patient_name: 'William Johnson',
+    age: 40,
+    gender: 'Male',
+    chief_complaint: 'Hallucinations and tremors after stopping alcohol',
+    vitals: {
+      blood_pressure: '145/95',
+      heart_rate: 120,
+      temperature: 100.2,
+      respiratory_rate: 22,
+      oxygen_saturation: 97
+    },
+    history: 'Chronic heavy alcohol use, stopped drinking 2 days ago',
+    system_instruction: 'You are William Johnson, a 40-year-old male with tremors, sweating, anxiety, and visual hallucinations after stopping alcohol. Answer questions showing alcohol withdrawal delirium (delirium tremens).',
+    correct_diagnosis: 'Alcohol Withdrawal Delirium (Delirium Tremens)',
+    correct_treatment: 'Benzodiazepines (e.g., diazepam or lorazepam), IV fluids, thiamine supplementation, electrolyte correction'
+  }
+];
+
             for (const caseData of sampleCases) {
                 await casesRef.add(caseData);
             }
