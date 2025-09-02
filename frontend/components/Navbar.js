@@ -47,25 +47,24 @@ export default function Navbar({ user }) {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-surface/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border/30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            {/* Logo and Brand */}
+            {/* Logo with Glass Effect */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg mr-3">
                   <img 
                     src="/favicon.ico"
                     alt="Prognosis Logo"
-                    className="h-8 w-8 object-contain"
+                    className="h-6 w-6 sm:h-7 sm:w-7 object-contain"
                     onError={(e) => {
-                      // Fallback to SVG icon if favicon fails to load
                       e.target.style.display = 'none';
                       e.target.nextElementSibling.style.display = 'block';
                     }}
                   />
                   <svg 
-                    className="h-6 w-6 text-medical" 
+                    className="h-5 w-5 sm:h-6 sm:w-6 text-medical" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -74,31 +73,28 @@ export default function Navbar({ user }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 9.172V5L8 4z" />
                   </svg>
                 </div>
-                <span className="ml-3 text-xl font-bold text-foreground tracking-tight">Prognosis</span>
+                <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent tracking-tight">Prognosis</span>
               </div>
               
               {/* Desktop Navigation */}
-              <div className="hidden md:ml-8 md:flex md:space-x-1">
+              <div className="hidden lg:ml-8 lg:flex lg:space-x-1">
                 <a
                   href="/dashboard"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated transition-all duration-200 relative group"
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated/80 transition-all duration-300 relative group"
                 >
-                  <span className="relative z-10">Dashboard</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  Dashboard
                 </a>
                 <a
                   href="/leaderboard"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated transition-all duration-200 relative group"
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated/80 transition-all duration-300 relative group"
                 >
-                  <span className="relative z-10">🏆 Leaderboard</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  Leaderboard
                 </a>
                 <a
                   href="/profile"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated transition-all duration-200 relative group"
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated/80 transition-all duration-300 relative group"
                 >
-                  <span className="relative z-10">👤 Profile</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  Profile
                 </a>
               </div>
             </div>
@@ -109,52 +105,49 @@ export default function Navbar({ user }) {
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
-                className="p-2.5 rounded-lg border border-border/60 hover:border-border hover:bg-elevated text-foreground transition-all duration-200 group"
+                className="p-2 rounded-xl bg-elevated/60 hover:bg-elevated border border-border/40 hover:border-border text-foreground transition-all duration-300 group"
               >
                 {theme === 'dark' ? (
-                  <svg className="h-5 w-5 transform group-hover:rotate-12 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-4 w-4 transform group-hover:rotate-180 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0-1.414 1.414M7.05 16.95l-1.414 1.414" />
                     <circle cx="12" cy="12" r="4" />
                   </svg>
                 ) : (
-                  <svg className="h-5 w-5 transform group-hover:-rotate-12 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-4 w-4 transform group-hover:rotate-180 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3A7 7 0 0021 12.79z" />
                   </svg>
                 )}
               </button>
               
-              {/* User Info and Logout */}
+              {/* User Profile - Consolidated */}
               {user && (
                 <div className="flex items-center space-x-3">
-                  {/* User Profile Picture or Initial */}
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-elevated/60 border border-border/40">
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt={user.displayName || user.email || 'User'}
-                        className="h-8 w-8 rounded-full object-cover border-2 border-border/30 hover:border-border transition-colors duration-200"
+                        className="h-7 w-7 rounded-lg object-cover"
                         onError={(e) => {
-                          // Fallback to initial if image fails to load
                           e.target.style.display = 'none';
                           e.target.nextElementSibling.style.display = 'flex';
                         }}
                       />
                     ) : null}
                     <div
-                      className={`h-8 w-8 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${
+                      className={`h-7 w-7 rounded-lg bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-xs font-semibold ${
                         user.photoURL ? 'hidden' : 'flex'
                       }`}
                     >
                       {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Welcome, </span>
-                      <span className="text-foreground font-semibold">{user.displayName || user.username || user.email}</span>
-                    </div>
+                    <span className="text-sm font-medium text-foreground truncate max-w-32">
+                      {user.displayName || user.username || user.email}
+                    </span>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground bg-elevated/60 hover:bg-elevated border border-border/40 hover:border-border rounded-lg transition-all duration-200 hover:shadow-md"
+                    className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-elevated/60 hover:bg-elevated border border-border/40 hover:border-border rounded-xl transition-all duration-300"
                   >
                     Logout
                   </button>
@@ -162,21 +155,21 @@ export default function Navbar({ user }) {
               )}
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile Actions */}
             <div className="md:hidden flex items-center space-x-2">
               {/* Mobile Theme Toggle */}
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
-                className="p-2 rounded-lg border border-border/60 hover:bg-elevated text-foreground transition-all duration-200"
+                className="p-2 rounded-xl bg-elevated/60 border border-border/40 text-foreground transition-all duration-300"
               >
                 {theme === 'dark' ? (
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0-1.414 1.414M7.05 16.95l-1.414 1.414" />
                     <circle cx="12" cy="12" r="4" />
                   </svg>
                 ) : (
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3A7 7 0 0021 12.79z" />
                   </svg>
                 )}
@@ -185,17 +178,17 @@ export default function Navbar({ user }) {
               {/* Hamburger Menu Button */}
               <button
                 type="button"
-                className="p-2 rounded-lg text-foreground hover:bg-elevated transition-all duration-200 border border-border/60 hover:border-border"
+                className="p-2 rounded-xl bg-elevated/60 border border-border/40 text-foreground transition-all duration-300"
                 onClick={toggleMobileMenu}
                 aria-expanded="false"
               >
                 <span className="sr-only">Open main menu</span>
                 {mobileMenuOpen ? (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 ) : (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                   </svg>
                 )}

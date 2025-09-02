@@ -78,7 +78,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
         )}
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center space-x-4 p-4 bg-elevated rounded-lg animate-pulse">
+            <div key={i} className="flex items-center space-x-4 p-4 bg-elevated rounded-lg">
               <div className="w-8 h-8 bg-muted rounded-full"></div>
               <div className="flex-1">
                 <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
@@ -106,7 +106,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <button
             onClick={fetchLeaderboard}
-            className="px-4 py-2 bg-medical text-white rounded-lg hover:bg-medical-dark transition-colors"
+            className="px-4 py-2 bg-medical text-white rounded-lg hover:bg-medical-dark"
           >
             Try Again
           </button>
@@ -131,7 +131,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
               <button
                 key={period}
                 onClick={() => setTimeframe(period)}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all duration-200 ${
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
                   timeframe === period
                     ? 'bg-medical text-white'
                     : 'bg-elevated text-muted-foreground hover:text-foreground hover:bg-elevated/80'
@@ -157,10 +157,10 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
           {displayData.map((user, index) => (
             <div
               key={user.userId}
-              className={`flex items-center space-x-4 p-4 rounded-lg transition-all duration-200 hover:scale-[1.02] ${
+              className={`flex items-center space-x-4 p-4 rounded-lg transition-colors ${
                 index < 3
-                  ? 'bg-gradient-to-r from-medical/10 to-medical-dark/10 border border-medical/20'
-                  : 'bg-elevated hover:bg-elevated/80'
+                  ? 'bg-gradient-to-r from-medical/10 to-medical-dark/10'
+                  : 'bg-elevated'
               }`}
             >
               {/* Rank and Trophy */}
@@ -174,7 +174,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
-                    alt={user.username}
+                    alt={user.username || user.email || 'User'}
                     className="w-10 h-10 rounded-full object-cover border-2 border-border/30"
                     onError={(e) => {
                       e.target.style.display = 'none';
@@ -183,16 +183,14 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                   />
                 ) : null}
                 <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${
-                    user.photoURL ? 'hidden' : 'flex'
-                  }`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${user.photoURL ? 'hidden' : 'flex'}`}
                 >
                   {(user.username || user.email || 'U').charAt(0).toUpperCase()}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">
-                    {user.username || user.email || 'Anonymous User'}
+                    {user.username || user.email?.split('@')[0] || 'User'}
                   </h3>
                   <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                     <span>{user.totalSessions} cases</span>
@@ -233,7 +231,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
         <div className="mt-6 text-center">
           <a
             href="/leaderboard"
-            className="inline-flex items-center px-4 py-2 bg-elevated text-foreground rounded-lg hover:bg-elevated/80 transition-colors font-medium"
+            className="inline-flex items-center px-4 py-2 bg-elevated text-foreground rounded-lg hover:bg-elevated/80 font-medium"
           >
             View Full Leaderboard
             <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
