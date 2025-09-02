@@ -112,9 +112,31 @@ export default function Navbar({ user }) {
               {/* User Info and Logout */}
               {user && (
                 <div className="flex items-center space-x-3">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Welcome, </span>
-                    <span className="text-foreground font-semibold">{user.username}</span>
+                  {/* User Profile Picture or Initial */}
+                  <div className="flex items-center space-x-3">
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName || user.email || 'User'}
+                        className="h-8 w-8 rounded-full object-cover border-2 border-border/30 hover:border-border transition-colors duration-200"
+                        onError={(e) => {
+                          // Fallback to initial if image fails to load
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`h-8 w-8 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${
+                        user.photoURL ? 'hidden' : 'flex'
+                      }`}
+                    >
+                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Welcome, </span>
+                      <span className="text-foreground font-semibold">{user.displayName || user.username || user.email}</span>
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -189,29 +211,28 @@ export default function Navbar({ user }) {
               {user && (
                 <div className="border-t border-border/30 pt-6">
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className="h-12 w-12 rounded-xl flex items-center justify-center">
-                      <img 
-                        src="/favicon.ico"
-                        alt="Prognosis Logo"
-                        className="h-10 w-10 object-contain"
+                    {/* User Profile Picture or Initial */}
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName || user.email || 'User'}
+                        className="h-12 w-12 rounded-xl object-cover border-2 border-border/30"
                         onError={(e) => {
-                          // Fallback to SVG icon if logo image fails to load
+                          // Fallback to initial if image fails to load
                           e.target.style.display = 'none';
-                          e.target.nextElementSibling.style.display = 'block';
+                          e.target.nextElementSibling.style.display = 'flex';
                         }}
                       />
-                      <svg 
-                        className="h-6 w-6 text-medical" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                        style={{ display: 'none' }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                    ) : null}
+                    <div
+                      className={`h-12 w-12 rounded-xl bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-lg font-semibold ${
+                        user.photoURL ? 'hidden' : 'flex'
+                      }`}
+                    >
+                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-foreground font-semibold text-lg">{user.username}</p>
+                      <p className="text-foreground font-semibold text-lg">{user.displayName || user.username || user.email}</p>
                       <p className="text-muted-foreground text-sm">Medical Student</p>
                     </div>
                   </div>

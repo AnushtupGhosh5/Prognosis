@@ -51,14 +51,14 @@ export default function AuthForm({ onAuthSuccess }) {
         }
       });
       
-      const { user_id, email, name } = response.data;
+      const { user_id, email, name, photoURL } = response.data;
       
       // Store user info
       const userInfo = {
         user_id,
         email,
         displayName: name || user.displayName,
-        photoURL: user.photoURL
+        photoURL: photoURL || user.photoURL
       };
 
       localStorage.setItem('userInfo', JSON.stringify(userInfo));

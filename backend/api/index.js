@@ -226,6 +226,7 @@ app.post('/api/auth/social', async (req, res) => {
         const userUid = decodedToken.uid;
         const email = decodedToken.email;
         const name = decodedToken.name || '';
+        const photoURL = decodedToken.picture || null;
         
         // Check if user exists in our database
         const usersRef = db.collection('users');
@@ -238,7 +239,8 @@ app.post('/api/auth/social', async (req, res) => {
             return res.json({
                 user_id: userDoc.id,
                 email: userData.email || email,
-                name: userData.name || name
+                name: userData.name || name,
+                photoURL: userData.photoURL || photoURL
             });
         } else {
             // Create new user record for social auth
@@ -246,6 +248,7 @@ app.post('/api/auth/social', async (req, res) => {
                 firebase_uid: userUid,
                 email: email,
                 name: name,
+                photoURL: photoURL,
                 auth_provider: 'social',
                 created_at: new Date(),
                 sessions: []
@@ -258,7 +261,8 @@ app.post('/api/auth/social', async (req, res) => {
             return res.status(201).json({
                 user_id: userId,
                 email: email,
-                name: name
+                name: name,
+                photoURL: photoURL
             });
         }
         
