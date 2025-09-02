@@ -86,6 +86,20 @@ export default function Navbar({ user }) {
                   <span className="relative z-10">Dashboard</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 </a>
+                <a
+                  href="/leaderboard"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated transition-all duration-200 relative group"
+                >
+                  <span className="relative z-10">🏆 Leaderboard</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                </a>
+                <a
+                  href="/profile"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-elevated transition-all duration-200 relative group"
+                >
+                  <span className="relative z-10">👤 Profile</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-medical/10 to-medical-dark/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                </a>
               </div>
             </div>
 
@@ -203,7 +217,21 @@ export default function Navbar({ user }) {
                   className="block px-4 py-3 rounded-lg text-base font-medium text-foreground bg-elevated/50 hover:bg-elevated transition-all duration-200"
                   onClick={closeMobileMenu}
                 >
-                  Dashboard
+                  📊 Dashboard
+                </a>
+                <a
+                  href="/leaderboard"
+                  className="block px-4 py-3 rounded-lg text-base font-medium text-foreground bg-elevated/50 hover:bg-elevated transition-all duration-200"
+                  onClick={closeMobileMenu}
+                >
+                  🏆 Leaderboard
+                </a>
+                <a
+                  href="/profile"
+                  className="block px-4 py-3 rounded-lg text-base font-medium text-foreground bg-elevated/50 hover:bg-elevated transition-all duration-200"
+                  onClick={closeMobileMenu}
+                >
+                  👤 Profile
                 </a>
               </div>
               

@@ -909,6 +909,331 @@ app.post('/api/debug/reset-cases', requireAuth, async (req, res) => {
     }
 });
 
+// Leaderboard endpoints
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const { limit = 50, timeframe = 'all' } = req.query;
+        
+        // Get all users
+        const usersRef = db.collection('users');
+        const usersSnapshot = await usersRef.get();
+        
+        if (usersSnapshot.empty) {
+            return res.json({ leaderboard: [] });
+        }
+        
+        const leaderboardData = [];
+        
+        for (const userDoc of usersSnapshot.docs) {
+            const userData = userDoc.data();
+            
+            // Get user's sessions
+            const sessionsRef = db.collection('sessions');
+            let sessionsQuery = sessionsRef
+                .where('user_id', '==', userDoc.id)
+                .where('status', '==', 'completed');
+            
+            // Apply timeframe filter if needed
+            if (timeframe !== 'all') {
+                const now = new Date();
+                let startDate = new Date();
+                
+                switch (timeframe) {
+                    case 'week':
+                        startDate.setDate(now.getDate() - 7);
+                        break;
+                    case 'month':
+                        startDate.setMonth(now.getMonth() - 1);
+                        break;
+                    case 'year':
+                        startDate.setFullYear(now.getFullYear() - 1);
+                        break;
+                }
+                
+                sessionsQuery = sessionsQuery.where('completed_at', '>=', startDate);
+            }
+            
+            const sessionsSnapshot = await sessionsQuery.get();
+            
+            if (sessionsSnapshot.empty) {
+                continue;
+            }
+            
+            // Calculate user statistics
+            let totalScore = 0;
+            let totalSessions = 0;
+            let perfectScores = 0;
+            let totalTime = 0;
+            
+            sessionsSnapshot.forEach(sessionDoc => {
+                const sessionData = sessionDoc.data();
+                if (sessionData.score !== null && sessionData.score !== undefined) {
+                    totalScore += sessionData.score;
+                    totalSessions++;
+                    
+                    if (sessionData.score === 100) {
+                        perfectScores++;
+                    }
+                    
+                    // Calculate session duration if timestamps are available
+                    if (sessionData.started_at && sessionData.completed_at) {
+                        const startTime = sessionData.started_at.toDate ? sessionData.started_at.toDate() : new Date(sessionData.started_at);
+                        const endTime = sessionData.completed_at.toDate ? sessionData.completed_at.toDate() : new Date(sessionData.completed_at);
+                        totalTime += (endTime - startTime) / 1000 / 60; // minutes
+                    }
+                }
+            });
+            
+            if (totalSessions > 0) {
+                const averageScore = Math.round(totalScore / totalSessions);
+                const averageTime = totalTime > 0 ? Math.round(totalTime / totalSessions) : 0;
+                
+                leaderboardData.push({
+                    user_id: userDoc.id,
+                    name: userData.name || userData.email || 'Anonymous',
+                    email: userData.email,
+                    photoURL: userData.photoURL || null,
+                    averageScore: averageScore,
+                    totalSessions: totalSessions,
+                    perfectScores: perfectScores,
+                    averageTime: averageTime,
+                    // Calculate ranking score (weighted average)
+                    rankingScore: Math.round((averageScore * 0.7) + (totalSessions * 0.2) + (perfectScores * 0.1))
+                });
+            }
+        }
+        
+        // Sort by ranking score (highest first)
+        leaderboardData.sort((a, b) => {
+            if (b.rankingScore === a.rankingScore) {
+                // Tie-breaker: higher average score
+                if (b.averageScore === a.averageScore) {
+                    // Secondary tie-breaker: more sessions
+                    return b.totalSessions - a.totalSessions;
+                }
+                return b.averageScore - a.averageScore;
+            }
+            return b.rankingScore - a.rankingScore;
+        });
+        
+        // Add rank positions
+        leaderboardData.forEach((user, index) => {
+            user.rank = index + 1;
+        });
+        
+        // Apply limit
+        const limitedData = leaderboardData.slice(0, parseInt(limit));
+        
+        res.json({ 
+            leaderboard: limitedData,
+            totalUsers: leaderboardData.length,
+            timeframe: timeframe
+        });
+        
+    } catch (error) {
+        console.error('Leaderboard error:', error);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+});
+
+// User profile endpoints
+app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
+    try {
+        const targetUserId = req.params.userId || req.userUid;
+        
+        // Get user data
+        let userDoc;
+        if (req.params.userId) {
+            // Looking up another user by ID
+            const usersRef = db.collection('users');
+            const userSnapshot = await usersRef.doc(targetUserId).get();
+            if (!userSnapshot.exists) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            userDoc = { id: userSnapshot.id, ...userSnapshot.data() };
+        } else {
+            // Looking up current user by UID
+            const usersRef = db.collection('users');
+            const userQuery = await usersRef.where('firebase_uid', '==', targetUserId).get();
+            if (userQuery.empty) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            const userSnapshot = userQuery.docs[0];
+            userDoc = { id: userSnapshot.id, ...userSnapshot.data() };
+        }
+        
+        // Get user's sessions
+        const sessionsRef = db.collection('sessions');
+        const sessionsSnapshot = await sessionsRef.where('user_id', '==', userDoc.id).get();
+        
+        // Calculate comprehensive statistics
+        const stats = {
+            totalSessions: 0,
+            completedSessions: 0,
+            averageScore: 0,
+            highestScore: 0,
+            lowestScore: 100,
+            perfectScores: 0,
+            totalScore: 0,
+            averageTime: 0,
+            fastestTime: null,
+            longestTime: 0,
+            recentSessions: [],
+            scoreHistory: [],
+            casesCompleted: [],
+            streakCurrent: 0,
+            streakLongest: 0
+        };
+        
+        let totalTime = 0;
+        const sessionTimes = [];
+        const completedSessions = [];
+        
+        sessionsSnapshot.forEach(sessionDoc => {
+            const sessionData = sessionDoc.data();
+            stats.totalSessions++;
+            
+            if (sessionData.status === 'completed' && sessionData.score !== null && sessionData.score !== undefined) {
+                stats.completedSessions++;
+                const score = sessionData.score;
+                
+                stats.totalScore += score;
+                stats.highestScore = Math.max(stats.highestScore, score);
+                stats.lowestScore = Math.min(stats.lowestScore, score);
+                
+                if (score === 100) {
+                    stats.perfectScores++;
+                }
+                
+                // Session duration calculation
+                if (sessionData.started_at && sessionData.completed_at) {
+                    const startTime = sessionData.started_at.toDate ? sessionData.started_at.toDate() : new Date(sessionData.started_at);
+                    const endTime = sessionData.completed_at.toDate ? sessionData.completed_at.toDate() : new Date(sessionData.completed_at);
+                    const duration = (endTime - startTime) / 1000 / 60; // minutes
+                    
+                    sessionTimes.push(duration);
+                    totalTime += duration;
+                    
+                    stats.fastestTime = stats.fastestTime === null ? duration : Math.min(stats.fastestTime, duration);
+                    stats.longestTime = Math.max(stats.longestTime, duration);
+                }
+                
+                completedSessions.push({
+                    id: sessionDoc.id,
+                    score: score,
+                    completed_at: sessionData.completed_at,
+                    case_id: sessionData.case_id
+                });
+                
+                stats.scoreHistory.push({
+                    score: score,
+                    date: sessionData.completed_at
+                });
+                
+                if (sessionData.case_id && !stats.casesCompleted.includes(sessionData.case_id)) {
+                    stats.casesCompleted.push(sessionData.case_id);
+                }
+            }
+        });
+        
+        // Calculate averages
+        if (stats.completedSessions > 0) {
+            stats.averageScore = Math.round(stats.totalScore / stats.completedSessions);
+            if (sessionTimes.length > 0) {
+                stats.averageTime = Math.round(totalTime / sessionTimes.length);
+                stats.fastestTime = Math.round(stats.fastestTime);
+                stats.longestTime = Math.round(stats.longestTime);
+            }
+        } else {
+            stats.lowestScore = 0;
+        }
+        
+        // Sort sessions by date (most recent first) for recent sessions
+        completedSessions.sort((a, b) => {
+            const dateA = a.completed_at?.toDate ? a.completed_at.toDate() : new Date(a.completed_at);
+            const dateB = b.completed_at?.toDate ? b.completed_at.toDate() : new Date(b.completed_at);
+            return dateB - dateA;
+        });
+        stats.recentSessions = completedSessions.slice(0, 10);
+        
+        // Sort score history by date
+        stats.scoreHistory.sort((a, b) => {
+            const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+            return dateA - dateB;
+        });
+        
+        // Calculate current and longest streaks
+        if (completedSessions.length > 0) {
+            let currentStreak = 0;
+            let longestStreak = 0;
+            let tempStreak = 0;
+            
+            // Sort by date for streak calculation
+            const sortedSessions = [...completedSessions].sort((a, b) => {
+                const dateA = a.completed_at?.toDate ? a.completed_at.toDate() : new Date(a.completed_at);
+                const dateB = b.completed_at?.toDate ? b.completed_at.toDate() : new Date(b.completed_at);
+                return dateA - dateB;
+            });
+            
+            for (let i = 0; i < sortedSessions.length; i++) {
+                if (sortedSessions[i].score >= 70) { // Consider 70+ as successful
+                    tempStreak++;
+                    longestStreak = Math.max(longestStreak, tempStreak);
+                } else {
+                    tempStreak = 0;
+                }
+            }
+            
+            // Calculate current streak from the end
+            for (let i = sortedSessions.length - 1; i >= 0; i--) {
+                if (sortedSessions[i].score >= 70) {
+                    currentStreak++;
+                } else {
+                    break;
+                }
+            }
+            
+            stats.streakCurrent = currentStreak;
+            stats.streakLongest = longestStreak;
+        }
+        
+        // Get user's rank in leaderboard
+        let userRank = null;
+        try {
+            const leaderboardResponse = await fetch(`${req.protocol}://${req.get('host')}/api/leaderboard?limit=1000`);
+            if (leaderboardResponse.ok) {
+                const leaderboardData = await leaderboardResponse.json();
+                const userEntry = leaderboardData.leaderboard.find(entry => entry.user_id === userDoc.id);
+                if (userEntry) {
+                    userRank = userEntry.rank;
+                }
+            }
+        } catch (error) {
+            console.log('Could not fetch user rank:', error);
+        }
+        
+        // Prepare response
+        const profileData = {
+            user: {
+                id: userDoc.id,
+                name: userDoc.name || userDoc.email || 'Anonymous',
+                email: userDoc.email,
+                photoURL: userDoc.photoURL || null,
+                created_at: userDoc.created_at,
+                rank: userRank
+            },
+            statistics: stats
+        };
+        
+        res.json(profileData);
+        
+    } catch (error) {
+        console.error('Profile error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
 export default app;
 
 // Helper function to generate new cases using AI
@@ -975,3 +1300,272 @@ Make it challenging but realistic for medical students to diagnose. Focus on con
         };
     }
 }
+
+// Leaderboard endpoints
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const { timeframe = 'all' } = req.query;
+        
+        // Get all users with their sessions
+        const usersSnapshot = await db.collection('users').get();
+        const leaderboardData = [];
+        
+        for (const userDoc of usersSnapshot.docs) {
+            const userData = userDoc.data();
+            const userId = userDoc.id;
+            
+            if (!userData.sessions || userData.sessions.length === 0) {
+                continue;
+            }
+            
+            let filteredSessions = userData.sessions;
+            
+            // Filter sessions based on timeframe
+            if (timeframe !== 'all') {
+                const now = new Date();
+                let cutoffDate;
+                
+                switch (timeframe) {
+                    case 'week':
+                        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'month':
+                        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    default:
+                        cutoffDate = new Date(0);
+                }
+                
+                filteredSessions = userData.sessions.filter(session => {
+                    const sessionDate = session.date && session.date.toDate ? session.date.toDate() : new Date(session.date);
+                    return sessionDate >= cutoffDate;
+                });
+            }
+            
+            if (filteredSessions.length === 0) continue;
+            
+            // Calculate statistics
+            const totalSessions = filteredSessions.length;
+            const totalScore = filteredSessions.reduce((sum, session) => sum + (session.score || 0), 0);
+            const averageScore = totalScore / totalSessions;
+            const bestScore = Math.max(...filteredSessions.map(s => s.score || 0));
+            
+            // Calculate streak
+            let currentStreak = 0;
+            const sortedSessions = filteredSessions
+                .sort((a, b) => {
+                    const dateA = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date);
+                    const dateB = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date);
+                    return dateB - dateA;
+                });
+            
+            for (const session of sortedSessions) {
+                if (session.score >= 70) {
+                    currentStreak++;
+                } else {
+                    break;
+                }
+            }
+            
+            leaderboardData.push({
+                userId,
+                username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                email: userData.email,
+                photoURL: userData.photoURL,
+                totalSessions,
+                totalScore,
+                averageScore: Math.round(averageScore * 10) / 10,
+                bestScore,
+                currentStreak
+            });
+        }
+        
+        // Sort by average score, then by total sessions
+        leaderboardData.sort((a, b) => {
+            if (b.averageScore !== a.averageScore) {
+                return b.averageScore - a.averageScore;
+            }
+            return b.totalSessions - a.totalSessions;
+        });
+        
+        // Add rank
+        leaderboardData.forEach((user, index) => {
+            user.rank = index + 1;
+        });
+        
+        res.json({
+            leaderboard: leaderboardData,
+            timeframe,
+            total_users: leaderboardData.length
+        });
+        
+    } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+});
+
+// User profile endpoint
+app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
+    try {
+        // Use provided userId or fall back to authenticated user
+        const targetUserId = req.params.userId || req.userUid;
+        
+        // Get user document
+        const userDoc = await db.collection('users').doc(targetUserId).get();
+        
+        if (!userDoc.exists) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const userData = userDoc.data();
+        const sessions = userData.sessions || [];
+        
+        if (sessions.length === 0) {
+            return res.json({
+                user: {
+                    id: targetUserId,
+                    username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                    email: userData.email,
+                    photoURL: userData.photoURL,
+                    joined: userData.created_at
+                },
+                statistics: {
+                    totalSessions: 0,
+                    averageScore: 0,
+                    bestScore: 0,
+                    totalScore: 0,
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    improvementRate: 0,
+                    categoryBreakdown: {},
+                    recentPerformance: []
+                },
+                achievements: [],
+                recentActivity: []
+            });
+        }
+        
+        // Calculate comprehensive statistics
+        const totalSessions = sessions.length;
+        const scores = sessions.map(s => s.score || 0);
+        const totalScore = scores.reduce((sum, score) => sum + score, 0);
+        const averageScore = totalScore / totalSessions;
+        const bestScore = Math.max(...scores);
+        
+        // Calculate streaks
+        let currentStreak = 0;
+        let longestStreak = 0;
+        let tempStreak = 0;
+        
+        const sortedSessions = sessions
+            .sort((a, b) => {
+                const dateA = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date);
+                const dateB = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date);
+                return dateA - dateB;
+            });
+        
+        // Calculate longest streak
+        for (const session of sortedSessions) {
+            if (session.score >= 70) {
+                tempStreak++;
+                longestStreak = Math.max(longestStreak, tempStreak);
+            } else {
+                tempStreak = 0;
+            }
+        }
+        
+        // Calculate current streak (from most recent)
+        const recentSessions = [...sortedSessions].reverse();
+        for (const session of recentSessions) {
+            if (session.score >= 70) {
+                currentStreak++;
+            } else {
+                break;
+            }
+        }
+        
+        // Calculate improvement rate (compare first half vs second half)
+        let improvementRate = 0;
+        if (totalSessions >= 4) {
+            const midPoint = Math.floor(totalSessions / 2);
+            const firstHalf = scores.slice(0, midPoint);
+            const secondHalf = scores.slice(midPoint);
+            const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+            const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+            improvementRate = ((secondAvg - firstAvg) / firstAvg) * 100;
+        }
+        
+        // Category breakdown (if case_type is available)
+        const categoryBreakdown = {};
+        sessions.forEach(session => {
+            const category = session.case_type || 'general';
+            if (!categoryBreakdown[category]) {
+                categoryBreakdown[category] = { count: 0, averageScore: 0, totalScore: 0 };
+            }
+            categoryBreakdown[category].count++;
+            categoryBreakdown[category].totalScore += session.score || 0;
+            categoryBreakdown[category].averageScore = 
+                categoryBreakdown[category].totalScore / categoryBreakdown[category].count;
+        });
+        
+        // Recent performance (last 10 sessions)
+        const recentPerformance = sortedSessions
+            .slice(-10)
+            .map(session => ({
+                date: session.date,
+                score: session.score || 0,
+                case_type: session.case_type || 'general'
+            }));
+        
+        // Calculate achievements
+        const achievements = [];
+        
+        if (totalSessions >= 1) achievements.push({ id: 'first_case', name: 'First Case', description: 'Completed your first medical case' });
+        if (totalSessions >= 10) achievements.push({ id: 'dedicated_learner', name: 'Dedicated Learner', description: 'Completed 10 medical cases' });
+        if (totalSessions >= 50) achievements.push({ id: 'case_master', name: 'Case Master', description: 'Completed 50 medical cases' });
+        if (bestScore >= 90) achievements.push({ id: 'perfectionist', name: 'Perfectionist', description: 'Achieved a score of 90% or higher' });
+        if (currentStreak >= 5) achievements.push({ id: 'on_fire', name: 'On Fire!', description: 'Current streak of 5+ successful cases' });
+        if (longestStreak >= 10) achievements.push({ id: 'unstoppable', name: 'Unstoppable', description: 'Achieved a 10+ case streak' });
+        if (averageScore >= 80) achievements.push({ id: 'expert_diagnostician', name: 'Expert Diagnostician', description: 'Maintained an 80%+ average score' });
+        
+        // Recent activity (last 5 sessions with more details)
+        const recentActivity = sortedSessions
+            .slice(-5)
+            .reverse()
+            .map(session => ({
+                date: session.date,
+                score: session.score || 0,
+                case_type: session.case_type || 'general',
+                patient_name: session.patient_name || 'Unknown Patient',
+                diagnosis: session.diagnosis || 'Not recorded'
+            }));
+        
+        res.json({
+            user: {
+                id: targetUserId,
+                username: userData.username || userData.email?.split('@')[0] || userData.displayName || 'Anonymous',
+                email: userData.email,
+                photoURL: userData.photoURL,
+                joined: userData.created_at
+            },
+            statistics: {
+                totalSessions,
+                averageScore: Math.round(averageScore * 10) / 10,
+                bestScore,
+                totalScore,
+                currentStreak,
+                longestStreak,
+                improvementRate: Math.round(improvementRate * 10) / 10,
+                categoryBreakdown,
+                recentPerformance
+            },
+            achievements,
+            recentActivity
+        });
+        
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+});

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
+import Leaderboard from '../../components/Leaderboard';
+import UserProfile from '../../components/UserProfile';
 import { onAuthStateChange, getUserToken } from '../../lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -281,19 +283,22 @@ export default function Dashboard() {
           </div>
 
           {/* Sessions History */}
-          <div className="card-elevated">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-3xl font-bold text-foreground mb-2">Your Medical Cases</h2>
-                <p className="text-muted-foreground">Track your progress and review past simulations</p>
-              </div>
-              <div className="flex items-center space-x-3 px-4 py-2 bg-elevated rounded-xl border border-border">
-                <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span className="text-sm font-medium text-foreground">Learning Progress</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Main Content Area */}
+            <div className="lg:col-span-2">
+              <div className="card-elevated">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">Your Medical Cases</h2>
+                    <p className="text-muted-foreground">Track your progress and review past simulations</p>
+                  </div>
+                  <div className="flex items-center space-x-3 px-4 py-2 bg-elevated rounded-xl border border-border">
+                    <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-foreground">Learning Progress</span>
+                  </div>
+                </div>
             
             {sessions.length === 0 ? (
               <div className="text-center py-16">
@@ -434,6 +439,17 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </div>
+            </div>
+            
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* User Profile Preview */}
+              <UserProfile compact={true} />
+              
+              {/* Leaderboard Preview */}
+              <Leaderboard showTitle={true} limit={5} />
+            </div>
           </div>
         </div>
       </div>
