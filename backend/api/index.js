@@ -11,19 +11,42 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Configure CORS for Vercel deployment
+// Configure CORS for Vercel deployment with dynamic origin checking
 const corsOptions = {
-    origin: [
-        "http://localhost:3000",
-        "https://prognosisfrontend.vercel.app",
-        "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisfrontend-fwdqirvov-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisbackend.vercel.app",
-        "https://prognosisbackend4.vercel.app",
-        "https://med-tutor-frontend.vercel.app",
-        "https://med-tutor.vercel.app"
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        // List of allowed origins
+        const allowedOrigins = [
+            "http://localhost:3000",
+            "https://prognosisfrontend.vercel.app",
+            "https://prognosisbackend.vercel.app",
+            "https://prognosisbackend4.vercel.app",
+            "https://med-tutor-frontend.vercel.app",
+            "https://med-tutor.vercel.app"
+        ];
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        
+        // Check if origin matches Vercel deployment pattern for your projects
+        const vercelPatterns = [
+            /^https:\/\/prognosisfrontend-[a-z0-9]+-anushtup-ghoshs-projects\.vercel\.app$/,
+            /^https:\/\/prognosisbackend-[a-z0-9]+-anushtup-ghoshs-projects\.vercel\.app$/
+        ];
+        
+        const isAllowed = vercelPatterns.some(pattern => pattern.test(origin));
+        if (isAllowed) {
+            return callback(null, true);
+        }
+        
+        // Log rejected origins for debugging
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+    },
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true
