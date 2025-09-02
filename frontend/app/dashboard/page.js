@@ -49,6 +49,11 @@ export default function Dashboard() {
         }
       });
 
+      console.log('Sessions response:', response.data.sessions);
+      if (response.data.sessions && response.data.sessions.length > 0) {
+        console.log('Sample session:', response.data.sessions[0]);
+        console.log('Sample started_at:', response.data.sessions[0].started_at);
+      }
       setSessions(response.data.sessions);
     } catch (err) {
       console.error('Fetch sessions error details:', {
@@ -118,32 +123,48 @@ export default function Dashboard() {
     
     let date;
     
-    // Handle different timestamp formats
-    if (timestamp.seconds) {
-      // Firebase Timestamp format
-      date = new Date(timestamp.seconds * 1000);
-    } else if (typeof timestamp === 'string') {
-      // ISO string format
-      date = new Date(timestamp);
-    } else if (timestamp instanceof Date) {
-      // Already a Date object
-      date = timestamp;
-    } else {
+    try {
+      // Handle different timestamp formats
+      if (timestamp.seconds) {
+        // Firebase Timestamp format
+        date = new Date(timestamp.seconds * 1000);
+      } else if (timestamp._seconds) {
+        // Alternative Firebase Timestamp format
+        date = new Date(timestamp._seconds * 1000);
+      } else if (typeof timestamp === 'string') {
+        // ISO string format
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        // Already a Date object
+        date = timestamp;
+      } else if (typeof timestamp === 'number') {
+        // Unix timestamp in milliseconds
+        date = new Date(timestamp);
+      } else if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        // Firebase Timestamp with toDate method
+        date = timestamp.toDate();
+      } else {
+        console.log('Unknown timestamp format:', timestamp);
+        return 'Unknown';
+      }
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.log('Invalid date created from:', timestamp);
+        return 'Unknown';
+      }
+      
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Timestamp:', timestamp);
       return 'Unknown';
     }
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      return 'Unknown';
-    }
-    
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (loading) {
