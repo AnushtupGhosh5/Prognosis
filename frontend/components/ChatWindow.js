@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { getUserToken } from '../lib/firebase';
+import VoiceInput from './VoiceInput';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -11,6 +12,7 @@ export default function ChatWindow({ sessionId, onSubmitDiagnosis }) {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -165,15 +167,25 @@ export default function ChatWindow({ sessionId, onSubmitDiagnosis }) {
       {/* Input Area */}
       <div className="px-6 py-4 border-t border-border">
         <div className="flex space-x-2">
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask the patient a question..."
-            className="input flex-1 min-h-[44px] max-h-32 resize-none"
-            rows="1"
-            disabled={loading}
-          />
+          <div className="flex-1 relative">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask the patient a question..."
+              className="input w-full min-h-[44px] max-h-32 resize-none pr-12"
+              rows="1"
+              disabled={loading}
+            />
+            <VoiceInput
+              onTranscript={(transcript) => {
+                setInputValue(prev => prev + (prev ? ' ' : '') + transcript);
+              }}
+              isListening={isListening}
+              setIsListening={setIsListening}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2"
+            />
+          </div>
           <button
             onClick={sendMessage}
             disabled={loading || !inputValue.trim()}

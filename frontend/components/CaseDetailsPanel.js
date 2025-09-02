@@ -1,6 +1,10 @@
 'use client';
+'use client';
+
+import { useState } from 'react';
 
 export default function CaseDetailsPanel({ caseData }) {
+  const [selectedImaging, setSelectedImaging] = useState(null);
   if (!caseData) {
     return(
       <div className="bg-surface rounded-xl shadow-lg p-6 border border-border">
@@ -69,6 +73,63 @@ export default function CaseDetailsPanel({ caseData }) {
             ))}
           </div>
         </div>
+
+        {/* Medical Imaging Section */}
+        {caseData.medical_imaging && (
+          <div className="border-t border-border pt-4">
+            <h3 className="font-semibold text-foreground mb-3 flex items-center">
+              <svg className="h-4 w-4 text-medical mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Medical Imaging
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(caseData.medical_imaging).map(([imagingType, details]) => (
+                <div key={imagingType} className="bg-elevated/40 border border-border rounded-md p-3">
+                  <button
+                    onClick={() => setSelectedImaging(selectedImaging === imagingType ? null : imagingType)}
+                    className="w-full flex items-center justify-between text-left text-sm font-medium text-foreground hover:text-medical transition-colors"
+                  >
+                    <span className="capitalize">
+                      {imagingType.replace('_', ' ')}
+                      {imagingType.includes('ct') && ' Scan'}
+                      {imagingType.includes('mri') && ' Scan'}
+                      {imagingType.includes('xray') && ' (X-ray)'}
+                      {imagingType.includes('ultrasound') && ' Ultrasound'}
+                      {imagingType.includes('ecg') && ' (ECG)'}
+                      {imagingType.includes('echocardiogram') && ' (Echo)'}
+                    </span>
+                    <svg 
+                      className={`h-4 w-4 transition-transform ${selectedImaging === imagingType ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {selectedImaging === imagingType && (
+                    <div className="mt-3 pt-3 border-t border-border/30">
+                      <p className="text-xs text-muted-foreground mb-2">{details.description}</p>
+                      <div className="space-y-1">
+                        <h5 className="text-xs font-medium text-foreground">Key Findings:</h5>
+                        <ul className="text-xs text-foreground/80 space-y-1">
+                          {details.findings.map((finding, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-medical mr-1">•</span>
+                              {finding}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

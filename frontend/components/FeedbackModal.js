@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import VoiceInput from './VoiceInput';
 
 export default function FeedbackModal({ isOpen, onClose, sessionId, onSubmit }) {
   const [diagnosis, setDiagnosis] = useState('');
   const [treatment, setTreatment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDiagnosisListening, setIsDiagnosisListening] = useState(false);
+  const [isTreatmentListening, setIsTreatmentListening] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -64,15 +67,25 @@ export default function FeedbackModal({ isOpen, onClose, sessionId, onSubmit }) 
             <label htmlFor="diagnosis" className="block text-sm font-medium text-foreground mb-2">
               Primary Diagnosis *
             </label>
-            <textarea
-              id="diagnosis"
-              value={diagnosis}
-              onChange={(e) => setDiagnosis(e.target.value)}
-              placeholder="Enter your primary diagnosis based on the patient's symptoms and history..."
-              className="input w-full"
-              rows="3"
-              required
-            />
+            <div className="relative">
+              <textarea
+                id="diagnosis"
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                placeholder="Enter your primary diagnosis based on the patient's symptoms and history..."
+                className="input w-full pr-12"
+                rows="3"
+                required
+              />
+              <VoiceInput
+                onTranscript={(transcript) => {
+                  setDiagnosis(prev => prev + (prev ? ' ' : '') + transcript);
+                }}
+                isListening={isDiagnosisListening}
+                setIsListening={setIsDiagnosisListening}
+                className="absolute right-2 top-2"
+              />
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Be specific and include your reasoning
             </p>
@@ -82,15 +95,25 @@ export default function FeedbackModal({ isOpen, onClose, sessionId, onSubmit }) 
             <label htmlFor="treatment" className="block text-sm font-medium text-foreground mb-2">
               Treatment Plan *
             </label>
-            <textarea
-              id="treatment"
-              value={treatment}
-              onChange={(e) => setTreatment(e.target.value)}
-              placeholder="Describe your immediate treatment plan, including medications, procedures, and follow-up care..."
-              className="input w-full"
-              rows="4"
-              required
-            />
+            <div className="relative">
+              <textarea
+                id="treatment"
+                value={treatment}
+                onChange={(e) => setTreatment(e.target.value)}
+                placeholder="Describe your immediate treatment plan, including medications, procedures, and follow-up care..."
+                className="input w-full pr-12"
+                rows="4"
+                required
+              />
+              <VoiceInput
+                onTranscript={(transcript) => {
+                  setTreatment(prev => prev + (prev ? ' ' : '') + transcript);
+                }}
+                isListening={isTreatmentListening}
+                setIsListening={setIsTreatmentListening}
+                className="absolute right-2 top-2"
+              />
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Include immediate interventions and ongoing management
             </p>

@@ -171,7 +171,7 @@ export default function UserProfile({ userId = null, compact = false }) {
           <div className="flex-1">
             <h3 className="text-xl font-bold text-foreground">{user?.username || user?.email?.split('@')[0] || 'User'}</h3>
             <p className="text-sm text-muted-foreground">
-              Joined {formatDate(user?.joined)}
+              Joined {formatDate(user?.created_at)}
             </p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function UserProfile({ userId = null, compact = false }) {
             <h1 className="text-3xl font-bold text-foreground mb-2">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
             <p className="text-muted-foreground mb-2">{user?.email}</p>
             <p className="text-sm text-muted-foreground">
-              Medical Student • Joined {formatDate(user?.joined)}
+              Medical Student • Joined {formatDate(user?.created_at)}
             </p>
           </div>
         </div>

@@ -4,6 +4,17 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { initFirebase, getDb, createCustomToken, verifyFirebaseToken } from './firebaseConfig.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load medical cases from JSON file
+const medicalCasesPath = join(__dirname, 'data', 'medical-cases.json');
+const medicalCasesData = JSON.parse(readFileSync(medicalCasesPath, 'utf8'));
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +29,9 @@ const corsOptions = {
         "https://prognosisfrontend.vercel.app",
         "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
         "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisbackend.vercel.app"
+        "https://prognosisbackend.vercel.app",
+        "https://prognosis.anushtup.com",
+        "https://*.prognosis.anushtup.com"
     ],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
@@ -253,43 +266,8 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
         });
         
         if (casesArray.length === 0) {
-            // Create sample cases if none exist
-            const sampleCases = [
-                {
-                    patient_name: 'John Smith',
-                    age: 45,
-                    gender: 'Male',
-                    chief_complaint: 'Chest pain for 2 hours',
-                    vitals: {
-                        blood_pressure: '160/95',
-                        heart_rate: 110,
-                        temperature: 98.6,
-                        respiratory_rate: 22,
-                        oxygen_saturation: 96
-                    },
-                    history: 'Patient has a history of hypertension and smoking',
-                    system_instruction: 'You are John Smith, a 45-year-old male presenting with chest pain. You are anxious and worried about having a heart attack. Answer medical student questions as this patient would, describing symptoms of acute coronary syndrome.',
-                    correct_diagnosis: 'Acute Coronary Syndrome',
-                    correct_treatment: 'Aspirin, nitroglycerin, oxygen, morphine, and urgent cardiology consultation'
-                },
-                {
-                    patient_name: 'Sarah Johnson',
-                    age: 28,
-                    gender: 'Female',
-                    chief_complaint: 'Severe abdominal pain',
-                    vitals: {
-                        blood_pressure: '120/80',
-                        heart_rate: 95,
-                        temperature: 101.2,
-                        respiratory_rate: 18,
-                        oxygen_saturation: 98
-                    },
-                    history: 'No significant past medical history',
-                    system_instruction: 'You are Sarah Johnson, a 28-year-old female with severe right lower quadrant abdominal pain. You are experiencing nausea and have had one episode of vomiting. Answer questions as this patient would, describing symptoms of acute appendicitis.',
-                    correct_diagnosis: 'Acute Appendicitis',
-                    correct_treatment: 'IV antibiotics, pain management, and urgent surgical consultation for appendectomy'
-                }
-            ];
+            // Load sample cases from JSON file if none exist
+            const sampleCases = medicalCasesData.predefinedCases;
             
             // Add sample cases to database
             for (const caseData of sampleCases) {
@@ -333,7 +311,8 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
             gender: selectedCase.gender,
             chief_complaint: selectedCase.chief_complaint,
             vitals: selectedCase.vitals,
-            history: selectedCase.history
+            history: selectedCase.history,
+            medical_imaging: selectedCase.medical_imaging || null
         };
         
         res.json(caseResponse);
@@ -616,7 +595,8 @@ app.get('/api/session/:sessionId', requireAuth, async (req, res) => {
                 gender: caseData.gender,
                 chief_complaint: caseData.chief_complaint,
                 vitals: caseData.vitals,
-                history: caseData.history
+                history: caseData.history,
+                medical_imaging: caseData.medical_imaging || null
             },
             chat_history: sessionData.chat_history || [],
             status: sessionData.status,

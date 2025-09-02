@@ -122,12 +122,15 @@ export default function Navbar({ user }) {
               {/* User Profile - Consolidated */}
               {user && (
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-elevated/60 border border-border/40">
+                  <a 
+                    href="/profile"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-elevated/60 border border-border/40 hover:bg-elevated transition-all duration-300"
+                  >
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt={user.displayName || user.email || 'User'}
-                        className="h-7 w-7 rounded-lg object-cover"
+                        className="h-7 w-7 rounded-full object-cover"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           e.target.nextElementSibling.style.display = 'flex';
@@ -135,7 +138,7 @@ export default function Navbar({ user }) {
                       />
                     ) : null}
                     <div
-                      className={`h-7 w-7 rounded-lg bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-xs font-semibold ${
+                      className={`h-7 w-7 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-xs font-semibold ${
                         user.photoURL ? 'hidden' : 'flex'
                       }`}
                     >
@@ -144,7 +147,7 @@ export default function Navbar({ user }) {
                     <span className="text-sm font-medium text-foreground truncate max-w-32">
                       {user.displayName || user.username || user.email}
                     </span>
-                  </div>
+                  </a>
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-elevated/60 hover:bg-elevated border border-border/40 hover:border-border rounded-xl transition-all duration-300"
@@ -231,13 +234,16 @@ export default function Navbar({ user }) {
               {/* Mobile User Section */}
               {user && (
                 <div className="border-t border-border/30 pt-6">
-                  <div className="flex items-center space-x-4 mb-4">
+                  <a 
+                    href="/profile"
+                    className="flex items-center space-x-4 mb-4"
+                  >
                     {/* User Profile Picture or Initial */}
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt={user.displayName || user.email || 'User'}
-                        className="h-12 w-12 rounded-xl object-cover border-2 border-border/30"
+                        className="h-12 w-12 rounded-full object-cover border-2 border-border/30"
                         onError={(e) => {
                           // Fallback to initial if image fails to load
                           e.target.style.display = 'none';
@@ -246,7 +252,7 @@ export default function Navbar({ user }) {
                       />
                     ) : null}
                     <div
-                      className={`h-12 w-12 rounded-xl bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-lg font-semibold ${
+                      className={`h-12 w-12 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-lg font-semibold ${
                         user.photoURL ? 'hidden' : 'flex'
                       }`}
                     >
@@ -256,7 +262,7 @@ export default function Navbar({ user }) {
                       <p className="text-foreground font-semibold text-lg">{user.displayName || user.username || user.email}</p>
                       <p className="text-muted-foreground text-sm">Medical Student</p>
                     </div>
-                  </div>
+                  </a>
                   <button
                     onClick={() => {
                       handleLogout();

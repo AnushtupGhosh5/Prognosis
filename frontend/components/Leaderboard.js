@@ -7,7 +7,6 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeframe, setTimeframe] = useState('all');
 
   const fetchLeaderboard = async () => {
     try {
@@ -20,7 +19,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/leaderboard?timeframe=${timeframe}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/leaderboard`,
         {
           method: 'GET',
           headers: {
@@ -46,7 +45,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [timeframe]);
+  }, []);
 
   const getTrophyIcon = (rank) => {
     switch (rank) {
@@ -120,28 +119,9 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   return (
     <div className="bg-surface rounded-xl border border-border/50 p-6">
       {showTitle && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground mb-4 sm:mb-0 flex items-center">
-            🏆 Leaderboard
-          </h2>
-          
-          {/* Timeframe Filter */}
-          <div className="flex space-x-2">
-            {['all', 'month', 'week'].map((period) => (
-              <button
-                key={period}
-                onClick={() => setTimeframe(period)}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
-                  timeframe === period
-                    ? 'bg-medical text-white'
-                    : 'bg-elevated text-muted-foreground hover:text-foreground hover:bg-elevated/80'
-                }`}
-              >
-                {period === 'all' ? 'All Time' : period === 'month' ? 'This Month' : 'This Week'}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+          🏆 Leaderboard
+        </h2>
       )}
 
       {displayData.length === 0 ? (
@@ -156,7 +136,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
         <div className="space-y-3">
           {displayData.map((user, index) => (
             <div
-              key={user.userId}
+              key={user.userId || user.email || `leaderboard-user-${index}`}
               className={`flex items-center space-x-4 p-4 rounded-lg transition-colors ${
                 index < 3
                   ? 'bg-gradient-to-r from-medical/10 to-medical-dark/10'
@@ -171,21 +151,25 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
               {/* User Info */}
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 {/* Profile Picture or Initial */}
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.username || user.email || 'User'}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-border/30"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${user.photoURL ? 'hidden' : 'flex'}`}
-                >
-                  {(user.username || user.email || 'U').charAt(0).toUpperCase()}
+                <div className="relative w-10 h-10">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.username || user.email || 'User'}
+                      className="w-full h-full rounded-full object-cover border-2 border-border/30"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.querySelector('.fallback-avatar').style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`fallback-avatar absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${
+                      user.photoURL ? 'hidden' : 'flex'
+                    }`}
+                  >
+                    {(user.username || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
                 </div>
 
                 <div className="flex-1 min-w-0">

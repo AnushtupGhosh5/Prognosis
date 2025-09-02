@@ -7,8 +7,12 @@ Prognosis is an innovative AI-powered medical case simulation platform designed 
 - **🔐 Secure Authentication**: JWT-based user registration and login system
 - **🤖 AI Patient Simulation**: Interactive conversations with AI-powered virtual patients using Google Gemini
 - **💬 Real-time Chat Interface**: Natural language conversations with simulated patients
-- **📋 Case Management**: Multiple clinical cases with different medical scenarios
+- **🎤 Voice Typing Support**: Built-in speech-to-text for hands-free diagnostic input
+- **📋 Case Management**: Multiple clinical cases with different medical scenarios stored in structured JSON format
+- **🏥 Medical Imaging Integration**: X-rays, CT scans, MRI, ECG, and ultrasound results for enhanced diagnostics
 - **📊 Intelligent Scoring System**: AI-powered feedback and scoring based on diagnosis accuracy
+- **🏆 Leaderboard & Rankings**: Competitive scoring system with user performance tracking
+- **👤 User Profiles**: Detailed statistics, achievements, and performance analytics
 - **📈 Session History**: Track and review past cases and performance metrics
 - **📱 Responsive Design**: Mobile-friendly interface with modern UI/UX
 
@@ -18,20 +22,23 @@ Prognosis is an innovative AI-powered medical case simulation platform designed 
 
 ```mermaid
 flowchart TD
-    A["Next.js Frontend<br/>React 19 + Tailwind CSS"] --> B["Flask Backend<br/>Python REST API"]
+    A["Next.js Frontend<br/>React 19 + Tailwind CSS"] --> B["Node.js Backend<br/>Express REST API"]
     B --> C["Firebase Firestore<br/>NoSQL Database"]
     B --> D["Firebase Auth<br/>User Management"]
     B --> E["Google Gemini API<br/>AI Integration"]
+    B --> F["Medical Cases JSON<br/>Structured Case Data"]
     
     A -.-> A1["Authentication UI"]
-    A -.-> A2["Chat Interface"]
-    A -.-> A3["Dashboard"]
-    A -.-> A4["Feedback System"]
+    A -.-> A2["Voice-Enabled Chat"]
+    A -.-> A3["Interactive Dashboard"]
+    A -.-> A4["Medical Imaging Viewer"]
+    A -.-> A5["Leaderboard & Analytics"]
     
     B -.-> B1["Auth Middleware"]
     B -.-> B2["Case Controller"]
     B -.-> B3["Session Controller"]
     B -.-> B4["AI Controller"]
+    B -.-> B5["Leaderboard API"]
     
     C -.-> C1["Users Collection"]
     C -.-> C2["Cases Collection"]
@@ -39,6 +46,10 @@ flowchart TD
     
     E -.-> E1["Patient Simulation"]
     E -.-> E2["Feedback Generation"]
+    
+    F -.-> F1["11 Predefined Cases"]
+    F -.-> F2["Medical Imaging Data"]
+    F -.-> F3["AI Case Generation"]
 ```
 
 ### Data Flow Architecture
@@ -155,10 +166,12 @@ flowchart TD
 ## 🛠️ Technology Stack
 
 - **Frontend**: Next.js 15 with React 19, Tailwind CSS 4
-- **Backend**: Flask (Python) with Flask-CORS
+- **Backend**: Node.js with Express.js
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Authentication with custom tokens
 - **AI**: Google Gemini API (gemini-1.5-flash)
+- **Voice Input**: Web Speech API (browser-native)
+- **Case Data**: Structured JSON files with medical imaging
 - **Styling**: Tailwind CSS with custom medical theme
 - **Development**: ESLint, PostCSS, Hot reload
 
@@ -166,13 +179,15 @@ flowchart TD
 
 ```
 /Prognosis
-├── 📁 backend/                 # Flask API Server
-│   ├── app.py                  # Main Flask application
-│   ├── firebase_config.py      # Firebase Admin SDK setup
-│   ├── requirements.txt        # Python dependencies
+├── 📁 backend/                 # Node.js Express API Server
+│   ├── index.js                # Main Express application
+│   ├── api/index.js            # Alternative API entry point
+│   ├── 📁 data/
+│   │   └── medical-cases.json  # Structured case data with imaging
+│   ├── firebaseConfig.js       # Firebase Admin SDK setup
+│   ├── package.json            # Node.js dependencies
 │   ├── .env                    # Environment variables (create from .env.example)
-│   ├── .env.example           # Environment template
-│   └── service_account.json    # Firebase service account key
+│   └── .env.example           # Environment template
 ├── 📁 frontend/                # Next.js Client Application
 │   ├── 📁 app/                 # Next.js App Router (v15)
 │   │   ├── layout.js           # Root layout with Tailwind CSS
@@ -180,15 +195,22 @@ flowchart TD
 │   │   ├── globals.css         # Global styles + Tailwind 4 theme config
 │   │   ├── 📁 dashboard/
 │   │   │   └── page.js         # User dashboard & session history
+│   │   ├── 📁 leaderboard/
+│   │   │   └── page.js         # Rankings and leaderboard
+│   │   ├── 📁 profile/
+│   │   │   └── page.js         # User profile and statistics
 │   │   ├── 📁 simulation/id/
 │   │   │   └── page.js         # Live case simulation
 │   │   └── 📁 feedback/id/
 │   │       └── page.js         # Post-simulation feedback
 │   ├── 📁 components/          # Reusable React components
 │   │   ├── AuthForm.js         # Login/Registration form
-│   │   ├── ChatWindow.js       # Real-time chat interface
-│   │   ├── CaseDetailsPanel.js # Patient vitals & information
-│   │   ├── FeedbackModal.js    # Diagnosis submission modal
+│   │   ├── ChatWindow.js       # Voice-enabled chat interface
+│   │   ├── CaseDetailsPanel.js # Patient vitals & medical imaging
+│   │   ├── FeedbackModal.js    # Voice-enabled diagnosis submission
+│   │   ├── VoiceInput.js       # Speech-to-text component
+│   │   ├── Leaderboard.js      # Rankings and competition
+│   │   ├── UserProfile.js      # Detailed user statistics
 │   │   └── Navbar.js           # Navigation bar
 │   ├── 📁 lib/                 # Utility libraries
 │   │   └── firebase.js         # Firebase client configuration
@@ -342,8 +364,12 @@ These example files contain all required environment variables with placeholder 
 1. **Register/Login**: Create an account or log in to access the platform
 2. **Start New Case**: Click "Start New Case" on the dashboard to begin a simulation
 3. **Patient Interview**: Use the chat interface to ask questions and gather information
+   - **Voice Input**: Click the microphone icon to use speech-to-text for hands-free typing
+   - **Medical Imaging**: Review X-rays, CT scans, MRI, ECG, and ultrasound results in the case details panel
 4. **Submit Diagnosis**: When ready, submit your diagnosis and treatment plan
+   - **Voice Typing**: Use voice input for diagnosis and treatment fields
 5. **Review Feedback**: Receive AI-generated feedback and scoring on your performance
+6. **Track Progress**: View your statistics, rankings, and achievements on the leaderboard and profile pages
 
 ### For Administrators
 
@@ -558,6 +584,97 @@ npm run lint
 # Verify environment
 echo $NEXT_PUBLIC_API_BASE_URL
 ```
+
+## 🆕 New Features in Latest Version
+
+### 🎤 Voice Typing Integration
+
+**Component**: `VoiceInput.js`
+- **Browser Support**: Uses Web Speech API (Chrome, Edge, Safari)
+- **Functionality**: 
+  - Real-time speech-to-text conversion
+  - Visual feedback with animated microphone icon
+  - Error handling for unsupported browsers
+  - Seamless integration with text inputs
+
+**Usage**:
+- Available in chat window for patient questions
+- Integrated in diagnosis and treatment submission forms
+- Click microphone icon to start/stop voice input
+- Spoken text automatically appends to existing content
+
+### 🏥 Medical Imaging System
+
+**Data Structure**: Enhanced case data with imaging information
+- **X-ray Results**: Chest X-rays with detailed findings
+- **CT Scans**: Head, chest, and abdominal CT imaging
+- **MRI Scans**: Brain MRI with contrast findings
+- **ECG/EKG**: 12-lead electrocardiogram results
+- **Ultrasound**: Renal, thyroid, and abdominal ultrasound
+- **Echocardiogram**: Cardiac function assessment
+
+**Features**:
+- Expandable imaging sections in case details panel
+- Detailed findings for each imaging modality
+- Integration with clinical reasoning process
+- Realistic medical imaging descriptions
+
+### 📄 Structured Case Data Management
+
+**File**: `backend/data/medical-cases.json`
+- **11 Comprehensive Cases**: From acute coronary syndrome to bacterial meningitis
+- **Medical Imaging Data**: Each case includes relevant imaging studies
+- **Structured Format**: Consistent JSON schema for easy maintenance
+- **Expandable**: Easy to add new cases without code changes
+
+**Case Categories**:
+- Cardiovascular: ACS, Heart Failure, Aortic Dissection
+- Neurological: Stroke, Meningitis, Hypoglycemia
+- Respiratory: Pneumonia, Respiratory Failure
+- Gastrointestinal: Appendicitis, Bowel Obstruction
+- Infectious: UTI, Sepsis, Withdrawal Syndromes
+- Endocrine: Hypothyroidism, Diabetic Emergencies
+
+### 🏆 Leaderboard & User Analytics
+
+**Components**: `Leaderboard.js`, `UserProfile.js`
+- **Competitive Rankings**: Real-time scoring and ranking system
+- **Performance Metrics**: Average scores, completion rates, streaks
+- **Achievement System**: Badges and milestones for progression
+- **Detailed Analytics**: Session history, improvement tracking
+
+**Features**:
+- Global leaderboard with top performers
+- Individual performance dashboards
+- Progress tracking over time
+- Comparative analytics and insights
+
+### 🚪 Backend Modernization
+
+**Migration**: Flask → Node.js/Express
+- **Performance**: Improved response times and scalability
+- **Maintenance**: Unified JavaScript ecosystem
+- **Features**: Enhanced error handling and logging
+- **API**: RESTful endpoints with comprehensive documentation
+
+**New Endpoints**:
+- `GET /api/leaderboard` - Rankings and statistics
+- `GET /api/profile/:userId?` - User profiles and analytics
+- Enhanced case management with imaging data
+
+### 📱 Enhanced User Experience
+
+**Responsive Design Improvements**:
+- Voice input accessibility on mobile devices
+- Touch-friendly medical imaging viewers
+- Optimized leaderboard layout for all screen sizes
+- Improved navigation with profile and ranking pages
+
+**Accessibility Features**:
+- Screen reader support for voice input components
+- Keyboard navigation for all interactive elements
+- High contrast medical imaging displays
+- Alternative text for visual elements
 
 ## Contributing
 
