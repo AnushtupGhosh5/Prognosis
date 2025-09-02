@@ -273,6 +273,20 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
     try {
         const userUid = req.userUid;
         
+        // Get user's completed cases (only count completed sessions)
+        const userSessionsRef = db.collection('sessions');
+        const userSessions = await userSessionsRef.where('user_id', '==', userUid).get();
+        const attemptedCaseIds = [];
+        userSessions.forEach(session => {
+            const sessionData = session.data();
+            // Count any session (active, completed, etc.) as "attempted" to avoid repeats
+            if (sessionData.case_id) {
+                attemptedCaseIds.push(sessionData.case_id);
+            }
+        });
+        
+        console.log('User attempted case IDs:', attemptedCaseIds);
+        
         // Get all available cases
         const casesRef = db.collection('cases');
         const casesSnapshot = await casesRef.get();
@@ -282,8 +296,19 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
             casesArray.push({ id: doc.id, ...doc.data() });
         });
         
-        if (casesArray.length === 0) {
-            // Create sample cases if none exist
+        console.log('All available cases:', casesArray.map(c => ({ id: c.id, name: c.patient_name })));
+        
+        if (casesArray.length < 11) {
+            // Create sample cases if we don't have all 11 cases
+            console.log(`Only ${casesArray.length} cases found, creating all sample cases...`);
+            
+            // Delete existing cases first to avoid duplicates
+            const batch = db.batch();
+            casesSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            
             const sampleCases = [
   {
     patient_name: 'John Smith',
@@ -475,7 +500,8 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
 ];
 
             for (const caseData of sampleCases) {
-                await casesRef.add(caseData);
+                const caseWithType = { ...caseData, case_type: 'predefined' };
+                await casesRef.add(caseWithType);
             }
             
             // Refresh cases list
@@ -486,8 +512,25 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
             });
         }
         
-        // Randomly select a case
-        const selectedCase = casesArray[Math.floor(Math.random() * casesArray.length)];
+        // Filter out cases the user has already attempted
+        const availableCases = casesArray.filter(caseItem => !attemptedCaseIds.includes(caseItem.id));
+        
+        console.log('Available cases after filtering:', availableCases.map(c => ({ id: c.id, name: c.patient_name })));
+        console.log('Total available cases:', availableCases.length);
+        
+        let selectedCase;
+        
+        if (availableCases.length > 0) {
+            // Select a random case from available cases
+            selectedCase = availableCases[Math.floor(Math.random() * availableCases.length)];
+        } else {
+            // All predefined cases completed, generate a new case using AI
+            selectedCase = await generateNewCase();
+            // Save the generated case to database
+            const newCaseRef = await casesRef.add(selectedCase);
+            selectedCase.id = newCaseRef.id;
+        }
+        
         const caseId = selectedCase.id;
         
         // Create new session
@@ -515,7 +558,8 @@ app.get('/api/case/start', requireAuth, async (req, res) => {
             gender: selectedCase.gender,
             chief_complaint: selectedCase.chief_complaint,
             vitals: selectedCase.vitals,
-            history: selectedCase.history
+            history: selectedCase.history,
+            case_type: selectedCase.case_type || 'predefined'
         };
         
         res.json(caseResponse);
@@ -841,4 +885,89 @@ app.get('/debug', (req, res) => {
     });
 });
 
+// Debug endpoint to reset cases (remove this in production)
+app.post('/api/debug/reset-cases', requireAuth, async (req, res) => {
+    try {
+        // Delete all existing cases
+        const casesRef = db.collection('cases');
+        const casesSnapshot = await casesRef.get();
+        
+        const batch = db.batch();
+        casesSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        
+        res.json({ message: 'All cases deleted. They will be recreated on next case start.' });
+    } catch (error) {
+        console.error('Reset cases error:', error);
+        res.status(500).json({ error: 'Failed to reset cases' });
+    }
+});
+
 export default app;
+
+// Helper function to generate new cases using AI
+async function generateNewCase() {
+    try {
+        const prompt = `
+Generate a realistic medical case for training purposes. Create a unique scenario that is different from common cases like heart attack, appendicitis, stroke, asthma, subarachnoid hemorrhage, pneumonia, aortic dissection, pyelonephritis, heart failure, hypothyroidism, hypoglycemia, meningitis, or alcohol withdrawal.
+
+Provide the following details in JSON format:
+{
+  "patient_name": "[First and Last name]",
+  "age": [age between 20-80],
+  "gender": "[Male/Female]",
+  "chief_complaint": "[Main symptom/complaint]",
+  "vitals": {
+    "blood_pressure": "[systolic/diastolic]",
+    "heart_rate": [number],
+    "temperature": [number],
+    "respiratory_rate": [number],
+    "oxygen_saturation": [number]
+  },
+  "history": "[Relevant medical history]",
+  "system_instruction": "[Instructions for AI to roleplay as this patient]",
+  "correct_diagnosis": "[Correct medical diagnosis]",
+  "correct_treatment": "[Appropriate treatment plan]",
+  "case_type": "ai_generated"
+}
+
+Make it challenging but realistic for medical students to diagnose. Focus on conditions like: pulmonary embolism, diabetic ketoacidosis, anaphylaxis, acute kidney injury, sepsis, pancreatitis, bowel obstruction, gallbladder disease, or other less common but important conditions.
+`;
+        
+        const model = genai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = result.response.text();
+        
+        // Extract JSON from the response
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const generatedCase = JSON.parse(jsonMatch[0]);
+            return generatedCase;
+        } else {
+            throw new Error('Failed to parse generated case');
+        }
+    } catch (error) {
+        console.error('Error generating new case:', error);
+        // Return a fallback case if generation fails
+        return {
+            patient_name: 'Generated Patient',
+            age: 45,
+            gender: 'Male',
+            chief_complaint: 'General malaise',
+            vitals: {
+                blood_pressure: '120/80',
+                heart_rate: 80,
+                temperature: 98.6,
+                respiratory_rate: 16,
+                oxygen_saturation: 98
+            },
+            history: 'No significant medical history',
+            system_instruction: 'You are a patient with general symptoms. Answer questions about feeling unwell.',
+            correct_diagnosis: 'Further evaluation needed',
+            correct_treatment: 'Comprehensive history and physical examination',
+            case_type: 'ai_generated'
+        };
+    }
+}
