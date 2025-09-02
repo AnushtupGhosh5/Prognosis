@@ -18,7 +18,11 @@ const corsOptions = {
         "https://prognosisfrontend.vercel.app",
         "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
         "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisbackend.vercel.app"
+        "https://prognosisfrontend-fwdqirvov-anushtup-ghoshs-projects.vercel.app",
+        "https://prognosisbackend.vercel.app",
+        "https://prognosisbackend4.vercel.app",
+        "https://med-tutor-frontend.vercel.app",
+        "https://med-tutor.vercel.app"
     ],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
@@ -27,6 +31,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Add response headers for cross-origin policies
+app.use((req, res, next) => {
+    // Set Cross-Origin-Opener-Policy to unsafe-none for OAuth compatibility
+    res.header('Cross-Origin-Opener-Policy', 'unsafe-none');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    next();
+});
 
 // Initialize Firebase
 const db = initFirebase();
@@ -72,6 +84,11 @@ app.all('/api/cors-test', (req, res) => {
         origin: req.headers.origin,
         message: 'CORS test successful'
     });
+});
+
+// Handle preflight requests for all API routes
+app.options('/api/*', (req, res) => {
+    res.status(200).end();
 });
 
 // Authentication endpoints

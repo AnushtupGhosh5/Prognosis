@@ -40,6 +40,9 @@ export default function Dashboard() {
         return;
       }
 
+      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('Full URL:', `${API_BASE_URL}/api/sessions`);
+      
       const response = await axios.get(`${API_BASE_URL}/api/sessions`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -48,8 +51,25 @@ export default function Dashboard() {
 
       setSessions(response.data.sessions);
     } catch (err) {
-      setError('Failed to load sessions');
-      console.error('Fetch sessions error:', err);
+      console.error('Fetch sessions error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        config: {
+          url: err.config?.url,
+          method: err.config?.method,
+          headers: err.config?.headers
+        }
+      });
+      
+      if (err.response?.status === 401) {
+        setError('Authentication failed. Please login again.');
+        router.push('/');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError(`Failed to load sessions: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
