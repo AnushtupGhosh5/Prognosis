@@ -10,7 +10,8 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build", 
     "start": "cd frontend && npm run start",
-    "backend": "cd backend && python app.py"
+    "backend": "cd backend && npm start",
+    "backend-dev": "cd backend && npm run dev"
   },
   "keywords": ["medical", "simulation", "ai", "education"],
   "author": "Prognosis Team",

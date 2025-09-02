@@ -2,29 +2,26 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.py",
-      "use": "@vercel/python"
+      "src": "index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/app.py"
+      "dest": "/index.js"
     },
     {
       "src": "/health",
-      "dest": "/app.py"
+      "dest": "/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/app.py"
+      "dest": "/index.js"
     }
   ],
-  "env": {
-    "PYTHONPATH": "."
-  },
   "functions": {
-    "app.py": {
+    "index.js": {
       "maxDuration": 30
     }
   }
