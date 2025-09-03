@@ -155,7 +155,7 @@ export default function UserProfile({ userId = null, compact = false }) {
           {user?.photoURL ? (
             <img
               src={user.photoURL}
-              alt={user.username || user.email || 'User'}
+              alt={user.name || user.username || user.email || 'User'}
               className="w-16 h-16 rounded-full object-cover border-2 border-border/30"
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -166,10 +166,10 @@ export default function UserProfile({ userId = null, compact = false }) {
           <div
             className={`w-16 h-16 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-xl font-bold ${user?.photoURL ? 'hidden' : 'flex'}`}
           >
-            {(user?.username || user?.email || 'U').charAt(0).toUpperCase()}
+            {(user?.name || user?.username || user?.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground">{user?.username || user?.email?.split('@')[0] || 'User'}</h3>
+            <h3 className="text-xl font-bold text-foreground">{user?.name || user?.username || user?.email?.split('@')[0] || 'User'}</h3>
             <p className="text-sm text-muted-foreground">
               Joined {formatDate(user?.created_at)}
             </p>
@@ -221,7 +221,7 @@ export default function UserProfile({ userId = null, compact = false }) {
           {user?.photoURL ? (
             <img
               src={user.photoURL}
-              alt={user.username || user.email || 'User'}
+              alt={user.name || user.username || user.email || 'User'}
               className="w-24 h-24 rounded-full object-cover border-4 border-border/30 mx-auto sm:mx-0"
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -232,10 +232,10 @@ export default function UserProfile({ userId = null, compact = false }) {
           <div
             className={`w-24 h-24 rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-3xl font-bold mx-auto sm:mx-0 ${user?.photoURL ? 'hidden' : 'flex'}`}
           >
-            {(user?.username || user?.email || 'U').charAt(0).toUpperCase()}
+            {(user?.name || user?.username || user?.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{user?.name || user?.username || user?.email?.split('@')[0] || 'User'}</h1>
             <p className="text-muted-foreground mb-2">{user?.email}</p>
             <p className="text-sm text-muted-foreground">
               Medical Student • Joined {formatDate(user?.created_at)}

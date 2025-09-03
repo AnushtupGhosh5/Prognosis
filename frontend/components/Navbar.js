@@ -129,7 +129,7 @@ export default function Navbar({ user }) {
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
-                        alt={user.displayName || user.email || 'User'}
+                        alt={user.displayName || user.name || user.email || 'User'}
                         className="h-7 w-7 rounded-full object-cover"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -142,7 +142,7 @@ export default function Navbar({ user }) {
                         user.photoURL ? 'hidden' : 'flex'
                       }`}
                     >
-                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                      {(user.displayName || user.name || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm font-medium text-foreground truncate max-w-32">
                       {user.displayName || user.username || user.email}
@@ -242,7 +242,7 @@ export default function Navbar({ user }) {
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
-                        alt={user.displayName || user.email || 'User'}
+                        alt={user.displayName || user.name || user.email || 'User'}
                         className="h-12 w-12 rounded-full object-cover border-2 border-border/30"
                         onError={(e) => {
                           // Fallback to initial if image fails to load
@@ -256,10 +256,10 @@ export default function Navbar({ user }) {
                         user.photoURL ? 'hidden' : 'flex'
                       }`}
                     >
-                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                      {(user.displayName || user.name || user.email || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-foreground font-semibold text-lg">{user.displayName || user.username || user.email}</p>
+                      <p className="text-foreground font-semibold text-lg">{user.displayName || user.name || user.username || user.email}</p>
                       <p className="text-muted-foreground text-sm">Medical Student</p>
                     </div>
                   </a>

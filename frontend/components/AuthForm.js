@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { loginWithCustomToken, signInWithGoogle, signInWithGithub } from '../lib/firebase';
+import { loginWithCustomToken, signInWithGoogle, signInWithGithub, auth } from '../lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function AuthForm({ onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: ''
   });
+  const [askName, setAskName] = useState(false);
+  const [pendingUser, setPendingUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState({ google: false, github: false });
   const [error, setError] = useState('');
@@ -84,22 +87,30 @@ export default function AuthForm({ onAuthSuccess }) {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const response = await axios.post(`${API_BASE_URL}${endpoint}`, {
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        // Include display name when registering
+        ...(isLogin ? {} : { name: formData.name.trim() || undefined })
       });
       
-      const { token, user_id, email } = response.data;
+      const { token, user_id, email, name } = response.data;
       
       // Sign in with custom token
       await loginWithCustomToken(token);
       
+      // After signing in, decide whether we need a display name
+      const displayName = name || (isLogin ? '' : formData.name.trim());
+      if (!displayName) {
+        // Ask for a name right away
+        setPendingUser({ user_id, email });
+        setAskName(true);
+        return;
+      }
+
       // Store user info in localStorage
-      localStorage.setItem('userInfo', JSON.stringify({
-        user_id,
-        email
-      }));
-      
+      localStorage.setItem('userInfo', JSON.stringify({ user_id, email, displayName }));
+
       if (onAuthSuccess) {
-        onAuthSuccess({ user_id, email });
+        onAuthSuccess({ user_id, email, displayName });
       }
       
     } catch (err) {
@@ -200,6 +211,21 @@ export default function AuthForm({ onAuthSuccess }) {
 
             {/* Email Form - Mobile responsive */}
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              {!isLogin && (
+                <div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    minLength={2}
+                    maxLength={60}
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-elevated/50 rounded-xl sm:rounded-2xl border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical transition-all duration-200 backdrop-blur-sm text-sm sm:text-base"
+                    placeholder="Your display name"
+                    value={formData.name}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
               <div>
                 <input
                   id="email"
@@ -270,6 +296,50 @@ export default function AuthForm({ onAuthSuccess }) {
           </div>
         </div>
       </div>
+      {askName && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Choose your display name</h3>
+            <p className="text-sm text-muted-foreground">This name appears on your profile and leaderboard.</p>
+            <form
+              onSubmit={async (ev) => {
+                ev.preventDefault();
+                const chosen = formData.name.trim();
+                if (chosen.length < 2) { setError('Name must be at least 2 characters'); return; }
+                try {
+                  const idToken = await auth.currentUser.getIdToken();
+                  await axios.post(`${API_BASE_URL}/api/profile/name`, { name: chosen }, {
+                    headers: { Authorization: `Bearer ${idToken}` }
+                  });
+                  localStorage.setItem('userInfo', JSON.stringify({ ...(pendingUser||{}), displayName: chosen }));
+                  setAskName(false);
+                  if (onAuthSuccess) onAuthSuccess({ ...(pendingUser||{}), displayName: chosen });
+                } catch (e) {
+                  setError(e.response?.data?.error || 'Failed to save name');
+                }
+              }}
+              className="space-y-3"
+            >
+              <input
+                id="nameModal"
+                name="name"
+                type="text"
+                minLength={2}
+                maxLength={60}
+                autoFocus
+                className="w-full px-4 py-2 bg-elevated/50 rounded-lg border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical"
+                placeholder="e.g., Dr. Jane Doe"
+                value={formData.name}
+                onChange={handleChange}
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" className="btn-secondary px-3 py-2" onClick={() => setAskName(false)}>Skip</button>
+                <button type="submit" className="btn-primary px-3 py-2">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

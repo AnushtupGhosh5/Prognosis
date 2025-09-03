@@ -30,6 +30,9 @@ const corsOptions = {
         // Keep existing explicit origins
         const allowedOrigins = [
             "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000",
             "https://prognosisfrontend.vercel.app",
             "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
             "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
@@ -56,13 +59,15 @@ const corsOptions = {
         console.log('CORS blocked origin:', origin);
         return callback(new Error('Not allowed by CORS'));
     },
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    // Let cors package reflect request headers to avoid case/variant issues locally
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
+// Explicitly handle preflight for all routes (helps some local setups)
+app.options('*', cors(corsOptions));
 
 // Initialize Firebase
 const db = initFirebase();

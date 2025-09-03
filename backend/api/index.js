@@ -31,6 +31,9 @@ const corsOptions = {
         // List of allowed origins
         const allowedOrigins = [
             "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000",
             "https://prognosisfrontend.vercel.app",
             "https://prognosisbackend.vercel.app",
             "https://prognosisbackend4.vercel.app",
@@ -75,7 +78,7 @@ const corsOptions = {
         console.log('CORS blocked origin:', origin);
         callback(new Error('Not allowed by CORS'));
     },
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    // Allow default header reflection; avoid strict header list to prevent preflight failures
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true
 };
@@ -138,14 +141,12 @@ app.all('/api/cors-test', (req, res) => {
 });
 
 // Handle preflight requests for all API routes
-app.options('/api/*', (req, res) => {
-    res.status(200).end();
-});
+app.options('*', cors(corsOptions));
 
 // Authentication endpoints
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, name } = req.body;
         
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
@@ -167,6 +168,8 @@ app.post('/api/auth/register', async (req, res) => {
         const userData = {
             email: email,
             password_hash: passwordHash,
+            // Optional display name for email signups
+            ...(name ? { name } : {}),
             created_at: new Date(),
             sessions: []
         };
@@ -184,7 +187,8 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(201).json({
             token: customToken,
             user_id: userId,
-            email: email
+            email: email,
+            name: name || null
         });
         
     } catch (error) {
@@ -227,7 +231,8 @@ app.post('/api/auth/login', async (req, res) => {
         res.json({
             token: customToken,
             user_id: userDoc.id,
-            email: email
+            email: email,
+            name: userData.name || null
         });
         
     } catch (error) {
@@ -1342,5 +1347,35 @@ app.get('/api/profile/:userId?', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching user profile:', error);
         res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+});
+
+// Update user's display name
+app.post('/api/profile/name', requireAuth, async (req, res) => {
+    try {
+        const { name } = req.body || {};
+        const trimmed = (name || '').trim();
+        if (!trimmed || trimmed.length < 2 || trimmed.length > 60) {
+            return res.status(400).json({ error: 'Name must be 2-60 characters' });
+        }
+
+        // Try by document ID (email/password users)
+        let userDocRef = db.collection('users').doc(req.userUid);
+        let doc = await userDocRef.get();
+        if (!doc.exists) {
+            // Fallback to social users where we stored firebase_uid
+            const q = await db.collection('users').where('firebase_uid', '==', req.userUid).get();
+            if (q.empty) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            userDocRef = q.docs[0].ref;
+            doc = q.docs[0];
+        }
+
+        await userDocRef.update({ name: trimmed });
+        return res.json({ success: true, name: trimmed, user_id: userDocRef.id });
+    } catch (error) {
+        console.error('Update name error:', error);
+        res.status(500).json({ error: 'Failed to update name' });
     }
 });
