@@ -2,10 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-export default function VoiceInput({ onTranscript, isListening, setIsListening, className = '' }) {
+// Track listening state reliably across async callbacks
+const useListeningRef = (value) => {
+  const ref = useRef(value);
+  useEffect(() => { ref.current = value; }, [value]);
+  return ref;
+};
+
+export default function VoiceInput({ onTranscript, isListening, setIsListening, className = '', buttonClassName = '' }) {
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState('');
   const recognitionRef = useRef(null);
+  const listeningRef = useListeningRef(isListening);
 
   useEffect(() => {
     // Check if browser supports Web Speech API
@@ -15,12 +23,14 @@ export default function VoiceInput({ onTranscript, isListening, setIsListening, 
       setIsSupported(true);
       
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      // Keep the recognizer running until the user toggles it off
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
       
       recognition.onstart = () => {
         setError('');
+        setIsListening(true);
       };
       
       recognition.onresult = (event) => {
@@ -39,13 +49,26 @@ export default function VoiceInput({ onTranscript, isListening, setIsListening, 
       };
       
       recognition.onerror = (event) => {
-        setError(`Voice recognition error: ${event.error}`);
+        // Common errors: 'not-allowed', 'no-speech', 'audio-capture'
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setError('Microphone permission denied');
+        } else if (event.error === 'no-speech') {
+          setError('No speech detected');
+        } else if (event.error === 'audio-capture') {
+          setError('No microphone found');
+        } else {
+          setError(`Voice recognition error: ${event.error}`);
+        }
         setIsListening(false);
+        try { recognition.stop(); } catch (_) {}
       };
       
       recognition.onend = () => {
-        setIsListening(false);
+        if (listeningRef.current) {
+          try { recognition.start(); } catch (_) {}
+        }
       };
+      
       
       recognitionRef.current = recognition;
     } else {
@@ -66,10 +89,15 @@ export default function VoiceInput({ onTranscript, isListening, setIsListening, 
     }
 
     if (isListening) {
-      recognitionRef.current?.stop();
+      // Turn off and stop any ongoing recognition
+      try { recognitionRef.current?.stop(); } catch (_) {}
+      setIsListening(false);
     } else {
       setError('');
-      recognitionRef.current?.start();
+      try { recognitionRef.current?.start(); } catch (e) {
+        setError('Could not access microphone');
+        return;
+      }
       setIsListening(true);
     }
   };
@@ -79,34 +107,34 @@ export default function VoiceInput({ onTranscript, isListening, setIsListening, 
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`${className}`}>
       <button
         type="button"
         onClick={toggleListening}
-        className={`p-2 rounded-lg transition-all duration-200 ${
+        className={`inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg transition-all duration-200 ${
           isListening
-            ? 'bg-red-500 text-white animate-pulse'
+            ? 'bg-red-500 text-white animate-pulse ring-2 ring-red-400/60'
             : 'bg-muted hover:bg-elevated text-muted-foreground hover:text-foreground'
-        }`}
+        } ${buttonClassName}`}
         title={isListening ? 'Stop voice input' : 'Start voice input'}
       >
         {isListening ? (
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
         ) : (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </svg>
         )}
       </button>
-      
-      {error && (
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-error text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-          {error}
-        </div>
-      )}
+
+      {/* Announce state changes for screen readers without impacting layout */}
+      <span className="sr-only" aria-live="polite">
+        {isListening ? 'Listening, click to stop.' : 'Voice input idle.'}
+        {error ? ` Error: ${error}` : ''}
+      </span>
     </div>
   );
 }

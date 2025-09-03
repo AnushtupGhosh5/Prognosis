@@ -165,37 +165,44 @@ export default function ChatWindow({ sessionId, onSubmitDiagnosis }) {
       )}
 
       {/* Input Area */}
-      <div className="px-6 py-4 border-t border-border">
-        <div className="flex space-x-2">
-          <div className="flex-1 relative">
+      <div className="px-4 sm:px-6 py-3 border-t border-border">
+        <div className="rounded-xl border border-border bg-elevated/40 focus-within:ring-1 focus-within:ring-medical transition shadow-sm">
+          <div className="flex items-end gap-2 p-2 sm:p-3">
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'; }}
               onKeyPress={handleKeyPress}
               placeholder="Ask the patient a question..."
-              className="input w-full min-h-[44px] max-h-32 resize-none pr-12"
+              className="flex-1 bg-transparent outline-none resize-none max-h-40 min-h-[40px] leading-6 text-foreground placeholder:text-muted-foreground/70 px-3 sm:px-4 py-2"
               rows="1"
               disabled={loading}
             />
+
             <VoiceInput
               onTranscript={(transcript) => {
                 setInputValue(prev => prev + (prev ? ' ' : '') + transcript);
               }}
               isListening={isListening}
               setIsListening={setIsListening}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
+              className="shrink-0"
+              buttonClassName=""
             />
+
+            <button
+              onClick={sendMessage}
+              disabled={loading || !inputValue.trim()}
+              className="shrink-0 inline-flex items-center justify-center rounded-lg bg-medical text-white w-9 h-9 sm:w-10 sm:h-10 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Send"
+              title="Send"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={sendMessage}
-            disabled={loading || !inputValue.trim()}
-            className="btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
         </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">Press Enter to send, Shift+Enter for new line.</p>
       </div>
     </div>
   );
