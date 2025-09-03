@@ -835,10 +835,17 @@ app.get('/api/leaderboard', async (req, res) => {
                 const averageScore = Math.round(totalScore / totalSessions);
                 const averageTime = totalTime > 0 ? Math.round(totalTime / totalSessions) : 0;
                 
+                const displayName = 
+                    userData.name ||
+                    userData.username ||
+                    userData.displayName ||
+                    (userData.email ? userData.email.split('@')[0] : null) ||
+                    'Anonymous';
+
                 leaderboardData.push({
                     user_id: userDoc.id,
-                    name: userData.name || userData.email || 'Anonymous',
-                    email: userData.email,
+                    name: displayName,
+                    email: userData.email || null,
                     photoURL: userData.photoURL || null,
                     averageScore: averageScore,
                     totalSessions: totalSessions,
