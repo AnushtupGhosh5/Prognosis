@@ -36,7 +36,9 @@ const corsOptions = {
             "https://prognosisbackend4.vercel.app",
             "https://med-tutor-frontend.vercel.app",
             "https://med-tutor.vercel.app",
-            "https://prognosis.anushtup.com"
+            "https://prognosis.anushtup.com",
+            // New explicit productions
+            "https://prognosis2.vercel.app"
         ];
         
         // Check if origin is in allowed list
@@ -46,8 +48,12 @@ const corsOptions = {
         
         // Check if origin matches Vercel deployment pattern for your projects
         const vercelPatterns = [
+            // Existing preview domains for old projects
             /^https:\/\/prognosisfrontend-[a-z0-9]+-anushtup-ghoshs-projects\.vercel\.app$/,
-            /^https:\/\/prognosisbackend-[a-z0-9]+-anushtup-ghoshs-projects\.vercel\.app$/
+            /^https:\/\/prognosisbackend-[a-z0-9]+-anushtup-ghoshs-projects\.vercel\.app$/,
+            // Allow previews for prognosisbackend and prognosis2 (e.g., prognosisbackend-<hash>.vercel.app)
+            /^https:\/\/prognosisbackend(?:-[a-z0-9-]+)?\.vercel\.app$/,
+            /^https:\/\/prognosis2(?:-[a-z0-9-]+)?\.vercel\.app$/
         ];
         
         const isAllowed = vercelPatterns.some(pattern => pattern.test(origin));

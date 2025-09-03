@@ -22,17 +22,40 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Configure CORS for Vercel deployment
+// Configure CORS for Vercel deployment (allow specific domains and patterns)
 const corsOptions = {
-    origin: [
-        "http://localhost:3000",
-        "https://prognosisfrontend.vercel.app",
-        "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
-        "https://prognosisbackend.vercel.app",
-        "https://prognosis.anushtup.com",
-        "https://*.prognosis.anushtup.com"
-    ],
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true); // allow Postman/mobile
+
+        // Keep existing explicit origins
+        const allowedOrigins = [
+            "http://localhost:3000",
+            "https://prognosisfrontend.vercel.app",
+            "https://prognosisfrontend-miadxejze-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisfrontend-ce14p6kjf-anushtup-ghoshs-projects.vercel.app",
+            "https://prognosisbackend.vercel.app",
+            "https://prognosis.anushtup.com",
+            // New explicit origin
+            "https://prognosis2.vercel.app"
+        ];
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // Allow subdomains/preview variants
+        const patterns = [
+            /^https:\/\/.*\.prognosis\.anushtup\.com$/, // any subdomain of custom domain
+            /^https:\/\/prognosisbackend(?:-[a-z0-9-]+)?\.vercel\.app$/, // backend previews
+            /^https:\/\/prognosis2(?:-[a-z0-9-]+)?\.vercel\.app$/ // prognosis2 previews
+        ];
+
+        const ok = patterns.some(re => re.test(origin));
+        if (ok) return callback(null, true);
+
+        console.log('CORS blocked origin:', origin);
+        return callback(new Error('Not allowed by CORS'));
+    },
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true
