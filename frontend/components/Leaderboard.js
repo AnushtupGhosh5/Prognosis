@@ -7,6 +7,10 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [nameModalOpen, setNameModalOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   const fetchLeaderboard = async () => {
     try {
@@ -45,7 +49,61 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
 
   useEffect(() => {
     fetchLeaderboard();
+    const handler = () => {
+      setNewName('');
+      setNameError('');
+      setNameModalOpen(true);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('open-set-name', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('open-set-name', handler);
+      }
+    };
   }, []);
+
+  const saveName = async () => {
+    const trimmed = (newName || '').trim();
+    if (trimmed.length < 2 || trimmed.length > 60) {
+      setNameError('Name must be 2–60 characters.');
+      return;
+    }
+    setSavingName(true);
+    setNameError('');
+    try {
+      const token = await getUserToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/profile/name`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: trimmed })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to save name (${res.status})`);
+      }
+      let currentUserId;
+      try {
+        currentUserId = JSON.parse(localStorage.getItem('userInfo') || '{}').user_id;
+      } catch (_) {}
+      setLeaderboardData(prev => prev.map(u => (
+        u.user_id === currentUserId ? { ...u, name: trimmed, needsName: false } : u
+      )));
+      try {
+        const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        localStorage.setItem('userInfo', JSON.stringify({ ...info, displayName: trimmed }));
+      } catch (_) {}
+      setNameModalOpen(false);
+    } catch (e) {
+      setNameError(e.message || 'Could not save name');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const getTrophyIcon = (rank) => {
     switch (rank) {
@@ -117,6 +175,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   const displayData = limit ? leaderboardData.slice(0, limit) : leaderboardData;
 
   return (
+    <>
     <div className="bg-surface rounded-xl border border-border/50 p-6">
       {showTitle && (
         <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
@@ -173,9 +232,21 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {user.name || user.username || 'Learner'}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {user.name || user.username || 'Learner'}
+                    </h3>
+                    {user.needsName && user.user_id === (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('userInfo')||'{}').user_id) && (
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-set-name'))}
+                        className="text-[11px] px-2 py-0.5 rounded bg-medical/15 text-medical border border-medical/30 hover:bg-medical/25"
+                        title="Set your display name"
+                      >
+                        Set name
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                     <span>{user.totalSessions} cases</span>
                     {user.currentStreak > 0 && (
@@ -225,5 +296,30 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
         </div>
       )}
     </div>
+
+    {nameModalOpen && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Choose your display name</h3>
+          <p className="text-sm text-muted-foreground">This name appears on your profile and leaderboard.</p>
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-full px-4 py-2 bg-elevated/50 rounded-lg border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical"
+            placeholder="e.g., Dr. Jane Doe"
+            minLength={2}
+            maxLength={60}
+            autoFocus
+          />
+          {nameError && (<p className="text-error text-sm">{nameError}</p>)}
+          <div className="flex justify-end gap-2">
+            <button className="btn-secondary px-3 py-2" onClick={() => setNameModalOpen(false)} disabled={savingName}>Cancel</button>
+            <button className="btn-primary px-3 py-2" onClick={saveName} disabled={savingName}>{savingName ? 'Saving…' : 'Save'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
