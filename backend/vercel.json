@@ -13,5 +13,8 @@
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ]
+  ],
+  "build": {
+    "ignoreCommand": "echo 1"
+  }
 }

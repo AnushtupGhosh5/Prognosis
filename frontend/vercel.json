@@ -28,5 +28,8 @@
         }
       ]
     }
-  ]
+  ],
+  "build": {
+    "ignoreCommand": "echo 1"
+  }
 }
