@@ -155,7 +155,7 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                   {user.photoURL ? (
                     <img
                       src={user.photoURL}
-                      alt={user.name || user.username || user.email || 'User'}
+                      alt={user.name || user.username || 'User'}
                       className="w-full h-full rounded-full object-cover border-2 border-border/30"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -168,13 +168,13 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
                       user.photoURL ? 'hidden' : 'flex'
                     }`}
                   >
-                    {(user.name || user.username || user.email || 'U').charAt(0).toUpperCase()}
+                    {(user.name || user.username || 'Learner').charAt(0).toUpperCase()}
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">
-                    {user.name || user.username || user.email?.split('@')[0] || 'User'}
+                    {user.name || user.username || 'Learner'}
                   </h3>
                   <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                     <span>{user.totalSessions} cases</span>

@@ -266,9 +266,17 @@ app.post('/api/auth/social', async (req, res) => {
         const existingUsersQuery = await usersRef.where('firebase_uid', '==', userUid).get();
         
         if (!existingUsersQuery.empty) {
-            // User exists, return existing data
+            // User exists, return existing data; backfill name/photo if missing
             const userDoc = existingUsersQuery.docs[0];
             const userData = userDoc.data();
+            try {
+                const updates = {};
+                if (!userData.name && name) updates.name = name;
+                if (!userData.photoURL && photoURL) updates.photoURL = photoURL;
+                if (Object.keys(updates).length) {
+                    await userDoc.ref.update(updates);
+                }
+            } catch (_) {}
             return res.json({
                 user_id: userDoc.id,
                 email: userData.email || email,
@@ -835,12 +843,10 @@ app.get('/api/leaderboard', async (req, res) => {
                 const averageScore = Math.round(totalScore / totalSessions);
                 const averageTime = totalTime > 0 ? Math.round(totalTime / totalSessions) : 0;
                 
-                const displayName = 
-                    userData.name ||
-                    userData.username ||
-                    userData.displayName ||
-                    (userData.email ? userData.email.split('@')[0] : null) ||
-                    'Anonymous';
+                const needsName = !(userData.name || userData.username || userData.displayName);
+                const displayName = needsName
+                    ? `Learner ${String(userDoc.id).slice(-4).toUpperCase()}`
+                    : (userData.name || userData.username || userData.displayName);
 
                 leaderboardData.push({
                     user_id: userDoc.id,
@@ -852,7 +858,8 @@ app.get('/api/leaderboard', async (req, res) => {
                     perfectScores: perfectScores,
                     averageTime: averageTime,
                     // Calculate ranking score (weighted average)
-                    rankingScore: Math.round((averageScore * 0.7) + (totalSessions * 0.2) + (perfectScores * 0.1))
+                    rankingScore: Math.round((averageScore * 0.7) + (totalSessions * 0.2) + (perfectScores * 0.1)),
+                    needsName
                 });
             }
         }
