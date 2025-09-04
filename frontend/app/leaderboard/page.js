@@ -51,7 +51,7 @@ export default function LeaderboardPage() {
               🏆 Leaderboard
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              See how you stack up against other medical students and track your progress
+              Top performers across AI-powered clinical simulations.
             </p>
           </div>
 

@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Leaderboard from '../../components/Leaderboard';
 import UserProfile from '../../components/UserProfile';
+import { NeonGradientCard } from '../../components/ui/neon-gradient-card';
 import { onAuthStateChange, getUserToken } from '../../lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -188,16 +189,28 @@ export default function Dashboard() {
       <div className="pt-6 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header Section */}
-          <div className="mb-12">
+          <div className="mb-12 relative">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-foreground mb-3 tracking-tight">
-                Medical Training Dashboard
+                AI-powered Diagnostic Platform
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Practice with AI-powered medical case simulations and enhance your diagnostic skills
               </p>
             </div>
             
+            {/* Subtle header gradient (desktop only) */}
+            <div className="hidden md:block absolute inset-x-0 -top-10 h-32 -z-10 pointer-events-none">
+              <div className="mx-auto h-full w-[85%] bg-[radial-gradient(600px_140px_at_85%_20%,var(--glow1),transparent)] opacity-60"></div>
+            </div>
+
+            {/* Decorative doctor image (desktop and up) */}
+            <img
+              src="/images/Prodi (2).png"
+              alt="Doctor illustration"
+              className="hidden md:block absolute top-7 right-[-16px] lg:right-[-32px] w-40 lg:w-56 opacity-95 drop-shadow-xl pointer-events-none select-none animate-float-y"
+            />
+
             {/* Stats Cards */}
             <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8">
               <div className="card-elevated text-center">
@@ -319,14 +332,7 @@ export default function Dashboard() {
                 {sessions.map((session, index) => (
                   <div key={session.session_id} className="relative">
                     {/* Modern Card Container */}
-                    <div className="relative p-6 sm:p-8 rounded-2xl bg-surface border border-border">
-                      
-                      {/* Status Indicator Bar */}
-                      <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-2xl ${
-                        session.status === 'completed' ? 'bg-medical' :
-                        session.status === 'active' ? 'bg-medical' :
-                        'bg-muted'
-                      }`}></div>
+                    <NeonGradientCard className="w-full">
                       
                       <div className="relative z-10">
                         {/* Header Section */}
@@ -424,7 +430,7 @@ export default function Dashboard() {
                           ) : (
                             <button
                               onClick={() => router.push(`/feedback/${session.session_id}`)}
-                              className="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-3 bg-elevated text-foreground font-semibold rounded-xl border border-border"
+                              className="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-3 bg-elevated text-foreground font-semibold rounded-xl border border-border transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 hover:bg-elevated/90 hover:border-medical/40 hover:shadow-[0_8px_20px_-10px_rgba(14,165,233,0.5)] focus:outline-none focus:ring-2 focus:ring-medical/30"
                             >
                               <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -434,7 +440,7 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </NeonGradientCard>
                   </div>
                 ))}
               </div>
@@ -445,7 +451,7 @@ export default function Dashboard() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* User Profile Preview */}
-              <UserProfile compact={true} />
+              <UserProfile compact={true} sessions={sessions} />
               
               {/* Leaderboard Preview */}
               <Leaderboard showTitle={true} limit={5} />

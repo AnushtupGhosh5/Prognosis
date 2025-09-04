@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getUserToken } from '../lib/firebase';
 
-export default function UserProfile({ userId = null, compact = false }) {
+export default function UserProfile({ userId = null, compact = false, sessions = null, statisticsOverride = null }) {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -145,7 +145,49 @@ export default function UserProfile({ userId = null, compact = false }) {
     );
   }
 
-  const { user = {}, statistics = {}, achievements = [], recentActivity = [] } = profileData || {};
+  // If sessions are provided from parent (e.g., dashboard), compute client-side statistics
+  const computeStatsFromSessions = (list = []) => {
+    try {
+      const totalSessions = Array.isArray(list) ? list.length : 0;
+      const completed = (list || []).filter((s) => typeof s?.score === 'number');
+      const totalScore = completed.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
+      const bestScore = completed.reduce((max, s) => Math.max(max, Number(s.score) || 0), 0);
+      const averageScore = completed.length > 0 ? totalScore / completed.length : 0;
+
+      // crude streak: count consecutive completed sessions from most recent by date
+      const sortable = [...(list || [])].sort((a, b) => {
+        const da = new Date(a.completed_at || a.started_at || 0).getTime();
+        const db = new Date(b.completed_at || b.started_at || 0).getTime();
+        return db - da;
+      });
+      let currentStreak = 0;
+      for (const s of sortable) {
+        if (s.status === 'completed') currentStreak += 1; else break;
+      }
+
+      return {
+        totalSessions,
+        totalScore,
+        averageScore,
+        bestScore,
+        currentStreak,
+        longestStreak: currentStreak, // placeholder without full history
+        recentPerformance: sortable.slice(0, 5).map((s) => ({
+          date: s.completed_at || s.started_at,
+          score: Number(s.score) || 0,
+          case_type: s.case_type || s.category || 'General',
+        })),
+      };
+    } catch (e) {
+      console.warn('Failed computing stats from sessions', e);
+      return {};
+    }
+  };
+
+  const computedStats = statisticsOverride || (sessions ? computeStatsFromSessions(sessions) : null);
+
+  const { user = {}, statistics: apiStatistics = {}, achievements = [], recentActivity = [] } = profileData || {};
+  const statistics = computedStats || apiStatistics || {};
 
   if (compact) {
     return (

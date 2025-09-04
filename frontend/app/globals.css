@@ -22,13 +22,18 @@
   --success: #16a34a;
   --warning: #f59e0b;
   --error: #ef4444;
+
+  /* Effects */
+  --grid: rgba(148, 163, 184, 0.12); /* slate-400 @ 12% for dark grid */
+  --glow1: rgba(34, 195, 238, 0.12); /* cyan glow */
+  --glow2: rgba(2, 132, 199, 0.10);  /* blue glow */
 }
 
 :root[data-theme='light'] {
   /* Light */
   --bg: #f7f7fb;            /* off-white */
   --surface: #ffffff;        /* paper */
-  --elevated: #ffffff;       /* elevated cards */
+  --elevated: #f9fafb;       /* subtle contrast against surface */
   --muted: #f3f4f6;          /* gray-100 */
   --border: #e5e7eb;         /* gray-200 */
   --foreground: #0f172a;     /* slate-900 */
@@ -40,6 +45,11 @@
   --success: #16a34a;
   --warning: #d97706;
   --error: #dc2626;
+
+  /* Effects */
+  --grid: rgba(2, 6, 23, 0.06);     /* slate-950 @ 6% for light grid */
+  --glow1: rgba(14, 165, 233, 0.10); /* slightly softer glow for light */
+  --glow2: rgba(2, 132, 199, 0.08);
 }
 
 @theme inline {
@@ -68,6 +78,28 @@ body {
   min-height: 100vh;
 }
 
+/* App chrome with ambient AI glow + subtle grid */
+.ai-bg {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, var(--glow1), transparent 60%),
+    radial-gradient(800px 400px at 90% 0%, var(--glow2), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--surface) 60%);
+}
+
+.ai-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px;
+  mask-image: radial-gradient(1200px 600px at 50% -20%, black 40%, transparent 70%);
+  pointer-events: none;
+}
+
 /* Utility abstractions */
 .btn-primary {
   @apply bg-medical hover:bg-medical-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm;
@@ -83,4 +115,54 @@ body {
 
 .input {
   @apply w-full px-3 py-2 rounded-lg border border-border bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/50 focus:border-medical;
+}
+
+/* Tailwind v4: custom keyframes and utility for neon gradient card */
+@keyframes background-position-spin {
+  0% {
+    background-position: top center;
+  }
+  100% {
+    background-position: bottom center;
+  }
+}
+
+.animate-background-position-spin {
+  animation: background-position-spin 3000ms infinite alternate;
+}
+
+/* Floating up-down animation (hidden on mobile via utilities) */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float-y {
+  animation: float-y 4s ease-in-out infinite;
+}
+
+/* Conic gradient rotation for neon border */
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes rotate-angle {
+  0% { --angle: 0deg; }
+  100% { --angle: 360deg; }
+}
+
+.animate-conic-rotate {
+  animation: rotate-angle 6s linear infinite;
+  animation-direction: normal; /* clockwise */
+}
+
+/* Slow clockwise spin using transform (fallback if angle-var unsupported) */
+@keyframes spin-clockwise {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-clockwise 6s linear infinite;
 }

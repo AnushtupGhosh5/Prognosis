@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        <div className="min-h-screen bg-bg">
+        <div className="ai-bg">
           {children}
         </div>
       </body>

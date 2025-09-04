@@ -146,9 +146,10 @@ export default function AuthForm({ onAuthSuccess }) {
             </svg>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-2 sm:mb-3">Prognosis</h1>
-          <h2 className="text-base sm:text-lg lg:text-xl font-medium text-muted-foreground mb-6 sm:mb-8">
-            {isLogin ? 'Welcome back' : 'Create your account'}
-          </h2>
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-foreground mb-2">AI‑Powered Diagnostic Practice</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
+            Simulate patient encounters, practice clinical reasoning, and get instant AI feedback.
+          </p>
         </div>
 
         {/* Auth Form Card */}
