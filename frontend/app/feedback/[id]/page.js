@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Navbar from '../../../components/Navbar';
+import { updateUserScore } from '../../../lib/leaderboard';
 import { onAuthStateChange, getUserToken } from '../../../lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -63,6 +64,18 @@ export default function Feedback({ params }) {
       setLoading(false);
     }
   };
+
+  // Persist the score to Firestore when session data is loaded and completed
+  useEffect(() => {
+    if (!sessionData || sessionData.status !== 'completed' || !user) return;
+    const uid = user?.uid; // Firebase Auth UID (custom token or social)
+    const s = Number(sessionData.score);
+    if (!uid || !(s >= 0)) return;
+    // Fire-and-forget; errors are non-blocking for UI
+    updateUserScore(uid, s).catch((e) => {
+      console.warn('Failed to update user score:', e);
+    });
+  }, [sessionData, user]);
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-600';

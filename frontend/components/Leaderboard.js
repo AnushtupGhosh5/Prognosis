@@ -1,145 +1,44 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getUserToken } from '../lib/firebase';
+import { useEffect, useState } from 'react';
+import { getLeaderboard } from '../lib/leaderboard';
 
 export default function Leaderboard({ showTitle = true, limit = 10 }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [nameModalOpen, setNameModalOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const [nameError, setNameError] = useState('');
-
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const token = await getUserToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/leaderboard`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setLeaderboardData(data.leaderboard || []);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchLeaderboard();
-    const handler = () => {
-      setNewName('');
-      setNameError('');
-      setNameModalOpen(true);
-    };
-    if (typeof window !== 'undefined') {
-      window.addEventListener('open-set-name', handler);
-    }
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getLeaderboard(limit || 50);
+        if (!mounted) return;
+        setLeaderboardData(data || []);
+      } catch (e) {
+        if (!mounted) return;
+        setError(e?.message || 'Failed to load leaderboard');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('open-set-name', handler);
-      }
+      mounted = false;
     };
-  }, []);
-
-  const saveName = async () => {
-    const trimmed = (newName || '').trim();
-    if (trimmed.length < 2 || trimmed.length > 60) {
-      setNameError('Name must be 2–60 characters.');
-      return;
-    }
-    setSavingName(true);
-    setNameError('');
-    try {
-      const token = await getUserToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/profile/name`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name: trimmed })
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to save name (${res.status})`);
-      }
-      let currentUserId;
-      try {
-        currentUserId = JSON.parse(localStorage.getItem('userInfo') || '{}').user_id;
-      } catch (_) {}
-      setLeaderboardData(prev => prev.map(u => (
-        u.user_id === currentUserId ? { ...u, name: trimmed, needsName: false } : u
-      )));
-      try {
-        const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        localStorage.setItem('userInfo', JSON.stringify({ ...info, displayName: trimmed }));
-      } catch (_) {}
-      setNameModalOpen(false);
-    } catch (e) {
-      setNameError(e.message || 'Could not save name');
-    } finally {
-      setSavingName(false);
-    }
-  };
-
-  const getTrophyIcon = (rank) => {
-    switch (rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return '🏅';
-    }
-  };
-
-  const getScoreBadgeColor = (score) => {
-    if (score >= 90) return 'bg-green-500';
-    if (score >= 80) return 'bg-blue-500';
-    if (score >= 70) return 'bg-yellow-500';
-    return 'bg-gray-500';
-  };
+  }, [limit]);
 
   if (loading) {
     return (
       <div className="bg-surface rounded-xl border border-border/50 p-6">
-        {showTitle && (
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-            🏆 Leaderboard
-          </h2>
-        )}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center space-x-4 p-4 bg-elevated rounded-lg">
-              <div className="w-8 h-8 bg-muted rounded-full"></div>
+              <div className="w-10 h-10 bg-muted rounded-full"></div>
               <div className="flex-1">
                 <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/4"></div>
+                <div className="h-4 bg-muted rounded w-1/6"></div>
               </div>
               <div className="w-16 h-6 bg-muted rounded"></div>
             </div>
@@ -152,17 +51,21 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   if (error) {
     return (
       <div className="bg-surface rounded-xl border border-border/50 p-6">
-        {showTitle && (
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-            🏆 Leaderboard
-          </h2>
-        )}
         <div className="text-center py-8">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <p className="text-muted-foreground mb-4">Failed to load leaderboard</p>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <button
-            onClick={fetchLeaderboard}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const data = await getLeaderboard(limit || 50);
+                setLeaderboardData(data || []);
+                setError(null);
+              } catch (e) {
+                setError(e?.message || 'Failed to load leaderboard');
+              } finally {
+                setLoading(false);
+              }
+            }}
             className="px-4 py-2 bg-medical text-white rounded-lg hover:bg-medical-dark"
           >
             Try Again
@@ -175,151 +78,59 @@ export default function Leaderboard({ showTitle = true, limit = 10 }) {
   const displayData = limit ? leaderboardData.slice(0, limit) : leaderboardData;
 
   return (
-    <>
     <div className="bg-surface rounded-xl border border-border/50 p-6">
       {showTitle && (
-        <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-          🏆 Leaderboard
-        </h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">Leaderboard</h2>
       )}
 
       {displayData.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🏆</div>
           <h3 className="text-xl font-semibold text-foreground mb-2">No Rankings Yet</h3>
           <p className="text-muted-foreground">
-            Complete some medical cases to appear on the leaderboard!
+            Complete some cases to appear on the leaderboard!
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <ul className="divide-y divide-border/50">
           {displayData.map((user, index) => (
-            <div
-              key={user.userId || user.email || `leaderboard-user-${index}`}
-              className={`flex items-center space-x-4 p-4 rounded-lg transition-colors ${
-                index < 3
-                  ? 'bg-gradient-to-r from-medical/10 to-medical-dark/10'
-                  : 'bg-elevated'
-              }`}
-            >
-              {/* Rank and Trophy */}
-              <div className="flex items-center justify-center w-10 h-10">
-                <span className="text-2xl">{getTrophyIcon(user.rank)}</span>
-              </div>
-
-              {/* User Info */}
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                {/* Profile Picture or Initial */}
-                <div className="relative w-10 h-10">
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user.name || user.username || 'User'}
-                      className="w-full h-full rounded-full object-cover border-2 border-border/30"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.querySelector('.fallback-avatar').style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className={`fallback-avatar absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-medical to-medical-dark flex items-center justify-center text-white text-sm font-semibold ${
-                      user.photoURL ? 'hidden' : 'flex'
-                    }`}
-                  >
-                    {(user.name || user.username || 'Learner').charAt(0).toUpperCase()}
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {user.name || user.username || 'Learner'}
-                    </h3>
-                    {user.needsName && user.user_id === (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('userInfo')||'{}').user_id) && (
-                      <button
-                        type="button"
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-set-name'))}
-                        className="text-[11px] px-2 py-0.5 rounded bg-medical/15 text-medical border border-medical/30 hover:bg-medical/25"
-                        title="Set your display name"
-                      >
-                        Set name
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                    <span>{user.totalSessions} cases</span>
-                    {user.currentStreak > 0 && (
-                      <span className="flex items-center">
-                        🔥 {user.currentStreak} streak
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Score Badge */}
-              <div className="flex flex-col items-end space-y-1">
+            <li key={user.id || index} className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.name || 'User'}
+                    className="w-10 h-10 rounded-full object-cover border border-border/40"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
                 <div
-                  className={`px-3 py-1.5 rounded-lg text-white text-sm font-bold ${getScoreBadgeColor(
-                    user.averageScore
-                  )}`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br from-medical to-medical-dark text-white font-semibold items-center justify-center ${
+                    user.photoURL ? 'hidden' : 'flex'
+                  }`}
                 >
-                  {user.averageScore.toFixed(1)}%
+                  {(user.name || 'U').charAt(0).toUpperCase()}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Best: {user.bestScore}%
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">
+                    {user.name || 'Unnamed User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">Rank #{index + 1}</p>
                 </div>
               </div>
-
-              {/* Rank Number */}
-              <div className="text-2xl font-bold text-muted-foreground/50 w-8 text-center">
-                #{user.rank}
+              <div className="text-right">
+                <span className="inline-block min-w-[64px] text-right font-bold">
+                  {typeof user.score === 'number' ? user.score.toFixed(1) : user.score}
+                </span>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
-      )}
-
-      {/* Show More Button for Limited View */}
-      {limit && leaderboardData.length > limit && (
-        <div className="mt-6 text-center">
-          <a
-            href="/leaderboard"
-            className="inline-flex items-center px-4 py-2 bg-elevated text-foreground rounded-lg hover:bg-elevated/80 font-medium"
-          >
-            View Full Leaderboard
-            <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
+        </ul>
       )}
     </div>
-
-    {nameModalOpen && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Choose your display name</h3>
-          <p className="text-sm text-muted-foreground">This name appears on your profile and leaderboard.</p>
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="w-full px-4 py-2 bg-elevated/50 rounded-lg border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-medical/30 focus:border-medical"
-            placeholder="e.g., Dr. Jane Doe"
-            minLength={2}
-            maxLength={60}
-            autoFocus
-          />
-          {nameError && (<p className="text-error text-sm">{nameError}</p>)}
-          <div className="flex justify-end gap-2">
-            <button className="btn-secondary px-3 py-2" onClick={() => setNameModalOpen(false)} disabled={savingName}>Cancel</button>
-            <button className="btn-primary px-3 py-2" onClick={saveName} disabled={savingName}>{savingName ? 'Saving…' : 'Save'}</button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   );
 }
+
