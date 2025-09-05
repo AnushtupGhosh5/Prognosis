@@ -100,8 +100,9 @@ export default function ChatWindow({ sessionId, onSubmitDiagnosis }) {
           <button
             onClick={onSubmitDiagnosis}
             className="btn-primary px-4 py-2 text-sm"
+            title="Finish the interview and proceed"
           >
-            Submit Diagnosis
+            End Chat
           </button>
         </div>
         <p className="text-sm text-muted-foreground mt-1">

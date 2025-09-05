@@ -154,16 +154,38 @@ export default function UserProfile({ userId = null, compact = false, sessions =
       const bestScore = completed.reduce((max, s) => Math.max(max, Number(s.score) || 0), 0);
       const averageScore = completed.length > 0 ? totalScore / completed.length : 0;
 
-      // crude streak: count consecutive completed sessions from most recent by date
+      // Sort by most recent activity (completed_at if present; otherwise started_at)
       const sortable = [...(list || [])].sort((a, b) => {
-        const da = new Date(a.completed_at || a.started_at || 0).getTime();
-        const db = new Date(b.completed_at || b.started_at || 0).getTime();
+        const da = new Date(a?.completed_at || a?.started_at || 0).getTime();
+        const db = new Date(b?.completed_at || b?.started_at || 0).getTime();
         return db - da;
       });
+
+      // Streak logic: ignore 'active' sessions (they should not break a completed streak)
+      // currentStreak = number of most recent consecutive 'completed' sessions, skipping any leading 'active'
       let currentStreak = 0;
+      let encounteredNonCompleted = false;
+      let longestStreak = 0;
+      let run = 0;
       for (const s of sortable) {
-        if (s.status === 'completed') currentStreak += 1; else break;
+        if (s?.status === 'active') {
+          // ignore actives for both current and longest calculations
+          continue;
+        }
+        if (s?.status === 'completed') {
+          run += 1;
+          if (!encounteredNonCompleted) {
+            currentStreak += 1;
+          }
+          if (run > longestStreak) longestStreak = run;
+        } else {
+          // any non-completed, non-active ends a streak run
+          encounteredNonCompleted = true;
+          if (run > longestStreak) longestStreak = run;
+          run = 0;
+        }
       }
+      if (run > longestStreak) longestStreak = run;
 
       return {
         totalSessions,
@@ -171,7 +193,7 @@ export default function UserProfile({ userId = null, compact = false, sessions =
         averageScore,
         bestScore,
         currentStreak,
-        longestStreak: currentStreak, // placeholder without full history
+        longestStreak,
         recentPerformance: sortable.slice(0, 5).map((s) => ({
           date: s.completed_at || s.started_at,
           score: Number(s.score) || 0,

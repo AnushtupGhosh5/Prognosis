@@ -192,7 +192,7 @@ export default function Dashboard() {
           <div className="mb-12 relative">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-foreground mb-3 tracking-tight">
-                AI-powered Diagnostic Platform
+                AI-powered Virtual Clinic
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Practice with AI-powered medical case simulations and enhance your diagnostic skills

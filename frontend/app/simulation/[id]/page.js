@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../../../components/Navbar';
 import ChatWindow from '../../../components/ChatWindow';
 import CaseDetailsPanel from '../../../components/CaseDetailsPanel';
+import MedicalImages from '../../../components/MedicalImages';
 import FeedbackModal from '../../../components/FeedbackModal';
 import { onAuthStateChange, getUserToken } from '../../../lib/firebase';
 
@@ -185,7 +186,10 @@ export default function Simulation({ params }) {
 
           {/* Case Details Panel */}
           <div className="lg:col-span-1">
-            <CaseDetailsPanel caseData={sessionData.case} />
+            <div className="space-y-4">
+              <CaseDetailsPanel caseData={sessionData.case} />
+              <MedicalImages sessionId={sessionId} caseData={sessionData.case} />
+            </div>
           </div>
         </div>
       </div>

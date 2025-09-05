@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Navbar from '../../../components/Navbar';
+import MedicalImages from '../../../components/MedicalImages';
 import { updateUserScore } from '../../../lib/leaderboard';
 import { onAuthStateChange, getUserToken } from '../../../lib/firebase';
 
@@ -91,35 +92,56 @@ export default function Feedback({ params }) {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Unknown';
-    
     let date;
-    
-    // Handle different timestamp formats
-    if (timestamp.seconds) {
-      // Firebase Timestamp format
-      date = new Date(timestamp.seconds * 1000);
-    } else if (typeof timestamp === 'string') {
-      // ISO string format
-      date = new Date(timestamp);
-    } else if (timestamp instanceof Date) {
-      // Already a Date object
-      date = timestamp;
-    } else {
+    try {
+      // Handle different timestamp formats
+      if (timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else if (timestamp._seconds) {
+        date = new Date(timestamp._seconds * 1000);
+      } else if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else {
+        return 'Unknown';
+      }
+      if (isNaN(date.getTime())) return 'Unknown';
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
       return 'Unknown';
     }
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      return 'Unknown';
+  };
+
+  const normalizeScore = (value) => {
+    if (value == null) return 0;
+    const num = Number(value);
+    if (!isFinite(num)) return 0;
+    // If score provided between 0 and 1, convert to percent
+    if (num > 0 && num <= 1) return Math.round(num * 100);
+    // Clamp to 0-100
+    return Math.max(0, Math.min(100, Math.round(num)));
+  };
+
+  const stripScoreHeading = (text) => {
+    if (!text) return "";
+    try {
+      const lines = String(text).split(/\r?\n/);
+      if (lines.length && /^\s*score\b/i.test(lines[0])) {
+        lines.shift();
+      }
+      return lines.join("\n").trim();
+    } catch {
+      return text;
     }
-    
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const startNewCase = async () => {
@@ -195,7 +217,7 @@ export default function Feedback({ params }) {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className={`${getScoreBadgeColor(sessionData.score)} text-white rounded-full p-4`}>
+            <div className={`${getScoreBadgeColor(normalizeScore(sessionData.score))} text-white rounded-full p-4`}>
               <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
               </svg>
@@ -206,8 +228,8 @@ export default function Feedback({ params }) {
             Patient: {sessionData.case.patient_name} • {sessionData.case.chief_complaint}
           </p>
           <div className="mt-4">
-            <span className={`text-4xl font-bold ${getScoreColor(sessionData.score)}`}>
-              {sessionData.score}/100
+            <span className={`text-4xl font-bold ${getScoreColor(normalizeScore(sessionData.score))}`}>
+              {normalizeScore(sessionData.score)}/100
             </span>
           </div>
         </div>
@@ -261,6 +283,11 @@ export default function Feedback({ params }) {
           </div>
         </div>
 
+        {/* Medical Images (if provided or available in public/images) */}
+        <div className="mb-8">
+          <MedicalImages sessionId={sessionId} caseData={sessionData.case} />
+        </div>
+
         {/* AI Feedback */}
         <div className="card mb-8">
           <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center">
@@ -271,7 +298,7 @@ export default function Feedback({ params }) {
           </h3>
           <div className="prose max-w-none">
             <div className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
-              {sessionData.feedback}
+              {stripScoreHeading(sessionData.feedback)}
             </div>
           </div>
         </div>
